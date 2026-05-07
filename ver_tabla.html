@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LogiSys — Personal Activo</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <style>
+    :root {
+      --amarillo:   #F5C400;
+      --negro:      #0D0D0D;
+      --gris-osc:   #1A1A1A;
+      --gris-med:   #222222;
+      --gris-borde: #333333;
+      --blanco:     #F0EDE8;
+      --texto-sec:  #888;
+      --rojo:       #E05252;
+      --verde:      #4CAF50;
+    }
+
+    body {
+      background-color: var(--negro);
+      color: var(--blanco);
+      font-family: 'Barlow', sans-serif;
+      min-height: 100vh;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(var(--gris-borde) 1px, transparent 1px),
+        linear-gradient(90deg, var(--gris-borde) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.10;
+      pointer-events: none;
+    }
+
+    /* NAV */
+    .navbar-logis {
+      border-bottom: 1px solid var(--gris-borde);
+      background: rgba(13,13,13,0.95);
+      backdrop-filter: blur(8px);
+      padding: 0.85rem 2rem;
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .brand {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800; font-size: 1.4rem;
+      letter-spacing: 0.08em; color: var(--blanco); text-decoration: none;
+    }
+    .brand span { color: var(--amarillo); }
+    .breadcrumb-bar {
+      font-size: 0.72rem; letter-spacing: 0.15em;
+      text-transform: uppercase; color: var(--texto-sec);
+    }
+    .breadcrumb-bar a { color: var(--amarillo); text-decoration: none; }
+
+    /* PAGE */
+    .page-wrap {
+      max-width: 1200px;
+      margin: 2.5rem auto;
+      padding: 0 1.5rem;
+      position: relative; z-index: 1;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 1.8rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .page-eyebrow {
+      font-size: 0.68rem; font-weight: 600;
+      letter-spacing: 0.25em; text-transform: uppercase;
+      color: var(--amarillo); margin-bottom: 0.4rem;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .page-eyebrow::before {
+      content: ''; display: inline-block;
+      width: 18px; height: 2px; background: var(--amarillo);
+    }
+    .page-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 2.4rem; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 0.02em; line-height: 1;
+    }
+
+    /* COUNT BADGE */
+    .count-badge {
+      background: rgba(245,196,0,0.12);
+      border: 1px solid rgba(245,196,0,0.3);
+      color: var(--amarillo);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.35rem 0.9rem;
+      border-radius: 2px;
+      white-space: nowrap;
+    }
+
+    /* ADD BUTTON */
+    .btn-add {
+      background: var(--amarillo);
+      color: var(--negro);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 2px;
+      padding: 0.55rem 1.4rem;
+      text-decoration: none;
+      transition: background 0.18s;
+      white-space: nowrap;
+    }
+    .btn-add:hover { background: #D4A800; color: var(--negro); }
+
+    /* TABLE WRAPPER */
+    .table-wrapper {
+      border: 1px solid var(--gris-borde);
+      border-radius: 2px;
+      overflow: hidden;
+      background: var(--gris-osc);
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    thead tr {
+      background: var(--negro);
+      border-bottom: 2px solid var(--amarillo);
+    }
+    thead th {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--texto-sec);
+      padding: 0.85rem 1rem;
+      white-space: nowrap;
+    }
+    thead th:first-child { color: var(--amarillo); }
+
+    tbody tr {
+      border-bottom: 1px solid var(--gris-borde);
+      transition: background 0.15s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--gris-med); }
+
+    td {
+      padding: 0.75rem 1rem;
+      color: var(--blanco);
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    .td-id {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      color: var(--texto-sec);
+      font-size: 0.9rem;
+    }
+
+    .td-name {
+      font-weight: 500;
+      color: var(--blanco);
+    }
+
+    /* Role badge */
+    .badge-rol {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 2px;
+      border: 1px solid;
+    }
+    .rol-1 { color: #F5C400; border-color: rgba(245,196,0,0.4); background: rgba(245,196,0,0.08); }
+    .rol-2 { color: #7EB8F0; border-color: rgba(126,184,240,0.4); background: rgba(126,184,240,0.08); }
+    .rol-3 { color: #A0D080; border-color: rgba(160,208,128,0.4); background: rgba(160,208,128,0.08); }
+    .rol-4 { color: #C0A0E0; border-color: rgba(192,160,224,0.4); background: rgba(192,160,224,0.08); }
+
+    /* Estado badge */
+    .badge-estado {
+      font-size: 0.65rem; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      padding: 3px 8px; border-radius: 2px; border: 1px solid;
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .estado-activo {
+      color: #4CAF50; border-color: rgba(76,175,80,0.4);
+      background: rgba(76,175,80,0.08);
+    }
+    .estado-inactivo {
+      color: #E05252; border-color: rgba(224,82,82,0.4);
+      background: rgba(224,82,82,0.08);
+    }
+    .dot {
+      width: 5px; height: 5px; border-radius: 50%; background: currentColor;
+    }
+
+    /* Seccion chip */
+    .chip-seccion {
+      font-size: 0.72rem; color: var(--texto-sec);
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--gris-borde);
+      padding: 2px 8px; border-radius: 2px;
+    }
+
+    /* Sueldo */
+    .td-sueldo {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 600; font-size: 0.95rem;
+      color: var(--amarillo);
+    }
+
+    /* Delete button */
+    .btn-delete {
+      background: transparent;
+      border: 1px solid var(--gris-borde);
+      color: var(--texto-sec);
+      border-radius: 2px;
+      font-size: 0.8rem;
+      padding: 4px 10px;
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+    .btn-delete:hover {
+      border-color: var(--rojo);
+      color: var(--rojo);
+      background: rgba(224,82,82,0.08);
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--texto-sec);
+    }
+    .empty-state .empty-icon {
+      font-size: 3rem;
+      color: var(--gris-borde);
+      margin-bottom: 1rem;
+    }
+    .empty-state p { font-size: 0.9rem; margin-bottom: 1.5rem; }
+
+    /* Alert */
+    .alert-danger {
+      background: rgba(224,82,82,0.1);
+      border: 1px solid var(--rojo); color: #f0a0a0; border-radius: 2px;
+    }
+    .alert-success {
+      background: rgba(76,175,80,0.1);
+      border: 1px solid var(--verde); color: #a0d0a2; border-radius: 2px;
+    }
+
+    /* Confirm modal */
+    .modal-content {
+      background: var(--gris-osc);
+      border: 1px solid var(--gris-borde);
+      border-radius: 2px;
+      color: var(--blanco);
+    }
+    .modal-header { border-bottom: 1px solid var(--gris-borde); }
+    .modal-footer { border-top: 1px solid var(--gris-borde); }
+    .btn-confirm-delete {
+      background: var(--rojo); border: none; color: #fff;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; border-radius: 2px;
+      padding: 0.5rem 1.3rem;
+    }
+    .btn-confirm-delete:hover { background: #c04040; color: #fff; }
+    .btn-modal-cancel {
+      background: transparent; color: var(--texto-sec);
+      border: 1px solid var(--gris-borde); border-radius: 2px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+      padding: 0.5rem 1.2rem;
+    }
+
+    @media (max-width: 768px) {
+      .page-header { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="navbar-logis">
+    <a href="/" class="brand">LOGI<span>SYS</span></a>
+    <div class="breadcrumb-bar">
+      <a href="/">Inicio</a> &nbsp;/&nbsp; Personal Activo
+    </div>
+  </nav>
+
+  <div class="page-wrap">
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show mb-3" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+      <div>
+        <div class="page-eyebrow">Directorio</div>
+        <div class="page-title">Personal Activo</div>
+      </div>
+      <div class="d-flex align-items-center gap-3">
+        <span class="count-badge">
+          <i class="bi bi-people-fill me-1"></i>
+          {{ empleados | length }} empleado{% if empleados | length != 1 %}s{% endif %}
+        </span>
+        <a href="{{ url_for('subir_empleado') }}" class="btn-add">
+          <i class="bi bi-plus-lg me-1"></i>Nuevo Empleado
+        </a>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-wrapper">
+      {% if empleados %}
+        <table>
+          <thead>
+            <tr>
+              <th>#ID</th>
+              <th>Nombre Completo</th>
+              <th>NSS</th>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th>Sección</th>
+              <th>Sueldo</th>
+              <th>Paquete ID</th>
+              <th>Fecha Ingreso</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for emp in empleados %}
+            <tr>
+              <td class="td-id">{{ emp.empleado_id }}</td>
+              <td class="td-name">
+                {{ emp.nombre1 }}
+                {% if emp.nombre2 %} {{ emp.nombre2 }}{% endif %}
+                {{ emp.apellido1 }}
+                {% if emp.apellido2 %} {{ emp.apellido2 }}{% endif %}
+              </td>
+              <td style="color:var(--texto-sec); font-size:0.8rem;">{{ emp.nss }}</td>
+              <td>
+                {% set rol_nombres = {1: 'Admin', 2: 'Supervisor', 3: 'Operativo', 4: 'Auxiliar'} %}
+                <span class="badge-rol rol-{{ emp.rol }}">
+                  {{ rol_nombres.get(emp.rol, emp.rol) }}
+                </span>
+              </td>
+              <td>
+                {% if emp.estado == 1 %}
+                  <span class="badge-estado estado-activo"><span class="dot"></span>Activo</span>
+                {% else %}
+                  <span class="badge-estado estado-inactivo"><span class="dot"></span>Inactivo</span>
+                {% endif %}
+              </td>
+              <td><span class="chip-seccion">{{ emp.seccion }}</span></td>
+              <td class="td-sueldo">$ {{ "{:,.0f}".format(emp.sueldo) }}</td>
+              <td style="color:var(--texto-sec); text-align:center;">{{ emp.paquete_asignado_id }}</td>
+              <td style="color:var(--texto-sec); font-size:0.78rem;">
+                {% if emp.fecha_ingreso_ET %}
+                  {{ emp.fecha_ingreso_ET.strftime('%d/%m/%Y') if emp.fecha_ingreso_ET.__class__.__name__ == 'datetime' else emp.fecha_ingreso_ET[:10] }}
+                {% else %}—{% endif %}
+              </td>
+              <td>
+                <button class="btn-delete"
+                        onclick="confirmarEliminar({{ emp.empleado_id }}, '{{ emp.nombre1 }} {{ emp.apellido1 }}')">
+                  <i class="bi bi-trash3"></i>
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+      {% else %}
+        <!-- EMPTY STATE -->
+        <div class="empty-state">
+          <div class="empty-icon"><i class="bi bi-people"></i></div>
+          <p>No hay empleados activos registrados en el sistema.</p>
+          <a href="{{ url_for('subir_empleado') }}" class="btn-add">
+            <i class="bi bi-plus-lg me-1"></i>Registrar el primero
+          </a>
+        </div>
+      {% endif %}
+    </div><!-- /table-wrapper -->
+
+  </div><!-- /page-wrap -->
+
+  <!-- MODAL CONFIRMACIÓN ELIMINAR -->
+  <div class="modal fade" id="modalEliminar" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h6 class="modal-title" style="font-family:'Barlow Condensed',sans-serif; font-size:1rem; letter-spacing:0.08em; text-transform:uppercase;">
+            <i class="bi bi-exclamation-triangle text-warning me-2"></i>Confirmar eliminación
+          </h6>
+        </div>
+        <div class="modal-body" style="font-size:0.85rem; color:var(--texto-sec);">
+          ¿Deseas dar de baja a <strong id="nombreEmpleado" style="color:var(--blanco);"></strong>?
+          <br><span style="font-size:0.75rem;">El registro se marcará como eliminado (no se borrará físicamente).</span>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-modal-cancel" data-bs-dismiss="modal">Cancelar</button>
+          <form id="formEliminar" method="POST">
+            <button type="submit" class="btn-confirm-delete">
+              <i class="bi bi-trash3 me-1"></i>Eliminar
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    function confirmarEliminar(id, nombre) {
+      document.getElementById('nombreEmpleado').textContent = nombre;
+      document.getElementById('formEliminar').action = '/eliminar_empleado/' + id;
+      new bootstrap.Modal(document.getElementById('modalEliminar')).show();
+    }
+  </script>
+
+</body>
+</html>

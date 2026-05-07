@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LogiSys — Paquetes</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <style>
+    :root {
+      --amarillo:  #F5C400;
+      --negro:     #0D0D0D;
+      --gris-osc:  #1A1A1A;
+      --gris-med:  #2B2B2B;
+      --gris-borde:#3A3A3A;
+      --blanco:    #F0EDE8;
+      --texto-sec: #888;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--negro); color: var(--blanco);
+      font-family: 'Barlow', sans-serif; min-height: 100vh;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background-image:
+        linear-gradient(var(--gris-borde) 1px, transparent 1px),
+        linear-gradient(90deg, var(--gris-borde) 1px, transparent 1px);
+      background-size: 40px 40px; opacity: 0.18;
+      pointer-events: none; z-index: 0;
+    }
+    body::after {
+      content: ''; position: fixed;
+      top: -20%; right: -10%; width: 55%; height: 140%;
+      background: linear-gradient(135deg, var(--amarillo) 0%, #D4A800 100%);
+      clip-path: polygon(18% 0, 100% 0, 100% 100%, 0% 100%);
+      opacity: 0.04; pointer-events: none; z-index: 0;
+    }
+    .wrapper { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* NAVBAR */
+    .navbar-logis {
+      border-bottom: 1px solid var(--gris-borde);
+      background: rgba(13,13,13,0.92); backdrop-filter: blur(8px); padding: 0.9rem 2rem;
+    }
+    .navbar-logis .brand {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800; font-size: 1.5rem; letter-spacing: 0.08em;
+      color: var(--blanco); text-decoration: none;
+    }
+    .navbar-logis .brand span { color: var(--amarillo); }
+    .nav-tag {
+      font-size: 0.65rem; font-weight: 600; letter-spacing: 0.2em;
+      text-transform: uppercase; color: var(--texto-sec);
+      border: 1px solid var(--gris-borde); padding: 2px 8px;
+      border-radius: 2px; margin-left: 1rem;
+    }
+    .btn-nav-back {
+      font-size: 0.72rem; font-weight: 600; letter-spacing: 0.15em;
+      text-transform: uppercase; color: var(--texto-sec);
+      text-decoration: none; border: 1px solid var(--gris-borde);
+      padding: 3px 10px; border-radius: 2px; transition: all 0.2s;
+    }
+    .btn-nav-back:hover { color: var(--amarillo); border-color: var(--amarillo); }
+
+    /* CONTENIDO */
+    .page-content { flex: 1; padding: 3rem 2rem; max-width: 1200px; margin: 0 auto; width: 100%; }
+
+    .page-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 2rem; flex-wrap: wrap; gap: 1.5rem; }
+    .page-eyebrow {
+      font-size: 0.7rem; font-weight: 600; letter-spacing: 0.25em;
+      text-transform: uppercase; color: var(--amarillo); margin-bottom: 0.6rem;
+      display: flex; align-items: center; gap: 0.6rem;
+    }
+    .page-eyebrow::before { content: ''; display: inline-block; width: 28px; height: 2px; background: var(--amarillo); }
+    .page-title {
+      font-family: 'Barlow Condensed', sans-serif; font-size: 2.4rem;
+      font-weight: 800; line-height: 0.95; text-transform: uppercase; color: var(--blanco);
+    }
+    .page-title .accent { color: var(--amarillo); }
+
+    /* Botón crear */
+    .btn-logis {
+      background: var(--amarillo); color: var(--negro);
+      border: none; border-radius: 2px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.95rem; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      padding: 0.65rem 1.3rem; cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      text-decoration: none;
+    }
+    .btn-logis:hover { background: #D4A800; transform: translateY(-1px); color: var(--negro); }
+
+    /* SEARCH / FILTER BAR */
+    .filter-bar {
+      display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;
+    }
+    .input-logis {
+      background: var(--gris-med); border: 1px solid var(--gris-borde);
+      border-radius: 2px; color: var(--blanco);
+      font-family: 'Barlow', sans-serif; font-size: 0.9rem;
+      padding: 0.55rem 1rem; outline: none;
+      transition: border-color 0.2s;
+    }
+    .input-logis::placeholder { color: var(--texto-sec); }
+    .input-logis:focus { border-color: var(--amarillo); }
+    .select-filter {
+      background: var(--gris-med); border: 1px solid var(--gris-borde);
+      border-radius: 2px; color: var(--blanco);
+      font-family: 'Barlow', sans-serif; font-size: 0.9rem;
+      padding: 0.55rem 1rem; outline: none; cursor: pointer;
+    }
+    .select-filter option { background: var(--gris-med); }
+
+    /* TABLA */
+    .table-wrap {
+      background: var(--gris-osc); border: 1px solid var(--gris-borde);
+      border-radius: 2px; overflow: hidden; position: relative;
+    }
+    .table-wrap::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--amarillo), #D4A800);
+    }
+    .table-logis { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .table-logis thead tr {
+      border-bottom: 1px solid var(--gris-borde); background: var(--negro);
+    }
+    .table-logis th {
+      font-size: 0.65rem; font-weight: 600; letter-spacing: 0.2em;
+      text-transform: uppercase; color: var(--texto-sec);
+      padding: 1rem 1.2rem; text-align: left; white-space: nowrap;
+    }
+    .table-logis td {
+      padding: 0.9rem 1.2rem; border-bottom: 1px solid rgba(58,58,58,0.5);
+      color: var(--blanco); vertical-align: middle;
+    }
+    .table-logis tbody tr:last-child td { border-bottom: none; }
+    .table-logis tbody tr { transition: background 0.15s; }
+    .table-logis tbody tr:hover { background: rgba(245,196,0,0.04); }
+
+    /* ID badge */
+    .pkg-id {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 1rem; font-weight: 700; color: var(--amarillo);
+      letter-spacing: 0.05em;
+    }
+
+    /* Estado badges */
+    .badge-estado {
+      font-size: 0.65rem; font-weight: 600; letter-spacing: 0.15em;
+      text-transform: uppercase; padding: 3px 8px; border-radius: 2px;
+      white-space: nowrap;
+    }
+    .badge-almacen  { background: rgba(245,196,0,0.12); color: var(--amarillo); border: 1px solid rgba(245,196,0,0.3); }
+    .badge-transito { background: rgba(80,160,255,0.12); color: #6eb0ff; border: 1px solid rgba(80,160,255,0.3); }
+    .badge-listo    { background: rgba(80,220,120,0.12); color: #6ddc94; border: 1px solid rgba(80,220,120,0.3); }
+    .badge-entregado{ background: rgba(136,136,136,0.12); color: var(--texto-sec); border: 1px solid var(--gris-borde); }
+
+    /* Tipo chip */
+    .tipo-chip {
+      font-size: 0.72rem; color: var(--texto-sec);
+      background: var(--gris-med); border: 1px solid var(--gris-borde);
+      padding: 2px 8px; border-radius: 2px; display: inline-block;
+    }
+
+    /* Botón eliminar */
+    .btn-del {
+      background: transparent; border: 1px solid var(--gris-borde);
+      color: var(--texto-sec); border-radius: 2px;
+      font-size: 0.8rem; padding: 4px 10px; cursor: pointer;
+      transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px;
+    }
+    .btn-del:hover { border-color: #ff6b6b; color: #ff6b6b; }
+
+    /* Vacío */
+    .empty-state {
+      text-align: center; padding: 4rem 2rem; color: var(--texto-sec);
+    }
+    .empty-state i { font-size: 3rem; margin-bottom: 1rem; opacity: 0.3; display: block; }
+    .empty-state p { font-size: 0.9rem; }
+
+    /* Flash */
+    .flash-zone { position: relative; z-index: 10; padding: 0 2rem; max-width: 1200px; margin: 1rem auto 0; width: 100%; }
+
+    footer {
+      border-top: 1px solid var(--gris-borde); padding: 1rem 2rem; text-align: center;
+      font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--gris-borde); position: relative; z-index: 1;
+    }
+
+    @media (max-width: 768px) {
+      .table-logis { font-size: 0.8rem; }
+      .table-logis th, .table-logis td { padding: 0.7rem 0.8rem; }
+      .page-title { font-size: 1.8rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- NAVBAR -->
+  <nav class="navbar-logis d-flex align-items-center">
+    <a href="{{ url_for('index') }}" class="brand">LOGI<span>SYS</span></a>
+    <span class="nav-tag">Almacén v1.0</span>
+    <div class="ms-auto d-flex align-items-center gap-3">
+      <span style="font-size:0.78rem; color:var(--texto-sec);">
+        <i class="bi bi-person-circle me-1"></i>{{ session.get('nombre', '') }}
+      </span>
+      <a href="{{ url_for('index') }}" class="btn-nav-back">
+        <i class="bi bi-arrow-left me-1"></i>Dashboard
+      </a>
+      <a href="{{ url_for('logout') }}" class="btn-nav-back">
+        <i class="bi bi-box-arrow-right me-1"></i>Salir
+      </a>
+    </div>
+  </nav>
+
+  <!-- FLASH -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-zone">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show mt-2" role="alert" style="border-radius:2px; font-size:0.9rem;">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- CONTENIDO -->
+  <div class="page-content">
+
+    <div class="page-header">
+      <div>
+        <div class="page-eyebrow">Gestión de paquetes</div>
+        <h1 class="page-title">Paquetes <span class="accent">Registrados</span></h1>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <button id="btn-organizar" class="btn-logis" style="background:var(--gris-med);color:var(--blanco);border:1px solid var(--gris-borde);" onclick="organizarAlmacen()">
+          <i class="bi bi-grid-3x3-gap"></i> Organizar almacén
+        </button>
+        <a href="{{ url_for('crear_paquete') }}" class="btn-logis">
+          <i class="bi bi-plus-lg"></i> Nuevo paquete
+        </a>
+      </div>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="filter-bar">
+      <input type="text" id="buscar" class="input-logis" placeholder="🔍  Buscar por ID o descripción..." style="flex:1; min-width:200px;"/>
+      <select id="filtro-tipo" class="select-filter">
+        <option value="">Todos los tipos</option>
+        <option>Electrónica</option>
+        <option>Ropa</option>
+        <option>Alimentos</option>
+        <option>Muebles</option>
+        <option>Herramientas</option>
+        <option>Farmacia</option>
+        <option>Juguetes</option>
+        <option>Otro</option>
+      </select>
+      <select id="filtro-estado" class="select-filter">
+        <option value="">Todos los estados</option>
+        <option>En almacén</option>
+        <option>En tránsito</option>
+        <option>Listo para salir</option>
+        <option>Entregado</option>
+      </select>
+    </div>
+
+    <!-- TABLA -->
+    <div class="table-wrap">
+      {% if paquetes %}
+      <table class="table-logis" id="tabla-paquetes">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Tipo / Sección</th>
+            <th>Estado</th>
+            <th>Fecha salida</th>
+            <th>Hora salida</th>
+            <th>Descripción</th>
+            <th>Creado por</th>
+            <th>Posición</th>
+            <th>Orden</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in paquetes %}
+          <tr>
+            <td><span class="pkg-id">#{{ '%04d' % p.paquete_id }}</span></td>
+            <td><span class="tipo-chip">{{ p.tipo }}</span></td>
+            <td>
+              {% if p.estado == 'En almacén' %}
+                <span class="badge-estado badge-almacen">{{ p.estado }}</span>
+              {% elif p.estado == 'En tránsito' %}
+                <span class="badge-estado badge-transito">{{ p.estado }}</span>
+              {% elif p.estado == 'Listo para salir' %}
+                <span class="badge-estado badge-listo">{{ p.estado }}</span>
+              {% else %}
+                <span class="badge-estado badge-entregado">{{ p.estado }}</span>
+              {% endif %}
+            </td>
+            <td>{{ p.fecha_salida.strftime('%d/%m/%Y') if p.fecha_salida else '—' }}</td>
+            <td>{{ p.hora_salida.strftime('%H:%M') if p.hora_salida else '—' }}</td>
+            <td style="color:var(--texto-sec); font-size:0.85rem;">{{ p.descripcion or '—' }}</td>
+            <td style="color:var(--texto-sec); font-size:0.85rem;">{{ p.creado_por or '—' }}</td>
+            <td id="pos-{{ p.paquete_id }}" style="font-family:'Barlow Condensed',sans-serif;font-size:0.95rem;color:var(--amarillo);letter-spacing:0.05em;">
+              {% if p.posicion_fila is not none and p.posicion_col is not none %}
+                F{{ p.posicion_fila + 1 }}-C{{ p.posicion_col + 1 }}
+              {% else %}—{% endif %}
+            </td>
+            <td id="orden-{{ p.paquete_id }}" style="color:var(--texto-sec);font-size:0.85rem;">
+              {{ p.orden_salida or '—' }}
+            </td>
+            <td>
+              <form method="POST" action="{{ url_for('eliminar_paquete', paquete_id=p.paquete_id) }}"
+                    onsubmit="return confirm('¿Eliminar paquete #{{ '%04d' % p.paquete_id }}?')">
+                <button type="submit" class="btn-del">
+                  <i class="bi bi-trash"></i> Eliminar
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">
+        <i class="bi bi-box-seam"></i>
+        <p>No hay paquetes registrados aún.</p>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <footer>&copy; 2024 &nbsp;·&nbsp; LogiSys Almacén &nbsp;·&nbsp; Todos los derechos reservados</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // ── Filtrado en vivo ──────────────────────────────
+  function filtrar() {
+    const texto  = document.getElementById('buscar').value.toLowerCase();
+    const tipo   = document.getElementById('filtro-tipo').value.toLowerCase();
+    const estado = document.getElementById('filtro-estado').value.toLowerCase();
+    const filas  = document.querySelectorAll('#tabla-paquetes tbody tr');
+    filas.forEach(fila => {
+      const id   = fila.cells[0].textContent.toLowerCase();
+      const tip  = fila.cells[1].textContent.toLowerCase();
+      const est  = fila.cells[2].textContent.toLowerCase();
+      const desc = fila.cells[5].textContent.toLowerCase();
+      const ok = (texto === '' || id.includes(texto) || desc.includes(texto))
+              && (tipo   === '' || tip.includes(tipo))
+              && (estado === '' || est.includes(estado));
+      fila.style.display = ok ? '' : 'none';
+    });
+  }
+  document.getElementById('buscar').addEventListener('input', filtrar);
+  document.getElementById('filtro-tipo').addEventListener('change', filtrar);
+  document.getElementById('filtro-estado').addEventListener('change', filtrar);
+
+  // ── Organizar almacén (llama al algoritmo en el backend) ──
+  function organizarAlmacen() {
+    const btn = document.getElementById('btn-organizar');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Organizando...';
+
+    fetch('/organizar_almacen?filas=4&columnas=5')
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) {
+          alert('Error: ' + data.error);
+          return;
+        }
+        // Actualiza las celdas de posición y orden sin recargar la página
+        data.resultado.forEach(p => {
+          const posCell   = document.getElementById('pos-'   + p.paquete_id);
+          const ordenCell = document.getElementById('orden-' + p.paquete_id);
+          if (posCell)   posCell.textContent   = p.posicion_label;
+          if (ordenCell) ordenCell.textContent = p.orden;
+        });
+        btn.innerHTML = '<i class="bi bi-check-circle"></i> Organizado';
+        btn.style.borderColor = '#6ddc94';
+        btn.style.color       = '#6ddc94';
+      })
+      .catch(err => {
+        alert('Error de red: ' + err);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-grid-3x3-gap"></i> Organizar almacén';
+      });
+  }
+</script>
+</body>
+</html>

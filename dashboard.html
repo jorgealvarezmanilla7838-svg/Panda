@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LogiSys — Sistema de Logística</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <style>
+    :root {
+      --amarillo:  #F5C400;
+      --negro:     #0D0D0D;
+      --gris-osc:  #1A1A1A;
+      --gris-med:  #2B2B2B;
+      --gris-borde:#3A3A3A;
+      --blanco:    #F0EDE8;
+      --texto-sec: #888;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--negro);
+      color: var(--blanco);
+      font-family: 'Barlow', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Fondo con patrón de rejilla ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--gris-borde) 1px, transparent 1px),
+        linear-gradient(90deg, var(--gris-borde) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.18;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Franja diagonal decorativa ── */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -20%;
+      right: -10%;
+      width: 55%;
+      height: 140%;
+      background: linear-gradient(135deg, var(--amarillo) 0%, #D4A800 100%);
+      clip-path: polygon(18% 0, 100% 0, 100% 100%, 0% 100%);
+      opacity: 0.04;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── NAVBAR ── */
+    .navbar-logis {
+      border-bottom: 1px solid var(--gris-borde);
+      background: rgba(13,13,13,0.92);
+      backdrop-filter: blur(8px);
+      padding: 0.9rem 2rem;
+    }
+    .navbar-logis .brand {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 1.5rem;
+      letter-spacing: 0.08em;
+      color: var(--blanco);
+      text-decoration: none;
+    }
+    .navbar-logis .brand span { color: var(--amarillo); }
+    .nav-tag {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--texto-sec);
+      border: 1px solid var(--gris-borde);
+      padding: 2px 8px;
+      border-radius: 2px;
+      margin-left: 1rem;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      padding: 5rem 2rem 3rem;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+      gap: 4rem;
+    }
+
+    .hero-left { flex: 1; min-width: 0; }
+
+    .eyebrow {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--amarillo);
+      margin-bottom: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .eyebrow::before {
+      content: '';
+      display: inline-block;
+      width: 28px;
+      height: 2px;
+      background: var(--amarillo);
+    }
+
+    h1 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(3.2rem, 7vw, 5.8rem);
+      font-weight: 800;
+      line-height: 0.95;
+      letter-spacing: -0.01em;
+      text-transform: uppercase;
+      color: var(--blanco);
+      margin-bottom: 1.5rem;
+    }
+    h1 .accent { color: var(--amarillo); }
+
+    .hero-desc {
+      font-size: 1rem;
+      font-weight: 300;
+      color: var(--texto-sec);
+      line-height: 1.7;
+      max-width: 420px;
+      margin-bottom: 2.8rem;
+    }
+
+    /* ── STATS ROW ── */
+    .stats {
+      display: flex;
+      gap: 2rem;
+      margin-bottom: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--gris-borde);
+    }
+    .stat-item { }
+    .stat-num {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--amarillo);
+      line-height: 1;
+    }
+    .stat-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--texto-sec);
+      margin-top: 2px;
+    }
+
+    /* ── ACTION CARDS ── */
+    .hero-right {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      min-width: 300px;
+      max-width: 340px;
+    }
+
+    .action-card {
+      display: flex;
+      align-items: center;
+      gap: 1.2rem;
+      padding: 1.5rem 1.6rem;
+      border: 1px solid var(--gris-borde);
+      background: var(--gris-osc);
+      text-decoration: none;
+      color: var(--blanco);
+      transition: all 0.22s ease;
+      position: relative;
+      overflow: hidden;
+      border-radius: 2px;
+    }
+    .action-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--amarillo);
+      transform: scaleY(0);
+      transition: transform 0.22s ease;
+      transform-origin: bottom;
+    }
+    .action-card:hover {
+      border-color: var(--amarillo);
+      background: var(--gris-med);
+      color: var(--blanco);
+      transform: translateX(4px);
+    }
+    .action-card:hover::before { transform: scaleY(1); }
+
+    .card-icon {
+      font-size: 1.8rem;
+      color: var(--amarillo);
+      flex-shrink: 0;
+    }
+    .card-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 0.15rem;
+    }
+    .card-sub {
+      font-size: 0.78rem;
+      color: var(--texto-sec);
+      font-weight: 300;
+    }
+    .card-arrow {
+      margin-left: auto;
+      color: var(--texto-sec);
+      font-size: 1rem;
+      transition: color 0.2s, transform 0.2s;
+    }
+    .action-card:hover .card-arrow {
+      color: var(--amarillo);
+      transform: translateX(3px);
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--gris-borde);
+      padding: 1rem 2rem;
+      text-align: center;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gris-borde);
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Flash messages ── */
+    .flash-zone {
+      position: relative;
+      z-index: 10;
+      padding: 0 2rem;
+      max-width: 1200px;
+      margin: 1rem auto 0;
+    }
+
+    @media (max-width: 768px) {
+      .hero { flex-direction: column; gap: 2rem; padding: 3rem 1.2rem 2rem; }
+      .hero-right { max-width: 100%; min-width: 0; width: 100%; }
+      h1 { font-size: 3rem; }
+      .stats { gap: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="wrapper">
+
+    <!-- NAVBAR -->
+    <nav class="navbar-logis d-flex align-items-center">
+      <a href="{{ url_for('index') }}" class="brand">LOGI<span>SYS</span></a>
+      <span class="nav-tag">Almacén v1.0</span>
+      <div class="ms-auto d-flex align-items-center gap-3">
+        <span style="font-size:0.78rem; color:var(--texto-sec);">
+          <i class="bi bi-person-circle me-1"></i>{{ session.get('nombre', '') }}
+        </span>
+        <a href="{{ url_for('logout') }}"
+           style="font-size:0.72rem; font-weight:600; letter-spacing:0.15em; text-transform:uppercase;
+                  color:var(--texto-sec); text-decoration:none; border:1px solid var(--gris-borde);
+                  padding:3px 10px; border-radius:2px; transition:all 0.2s;"
+           onmouseover="this.style.color='var(--amarillo)';this.style.borderColor='var(--amarillo)'"
+           onmouseout="this.style.color='var(--texto-sec)';this.style.borderColor='var(--gris-borde)'">
+          <i class="bi bi-box-arrow-right me-1"></i>Salir
+        </a>
+      </div>
+    </nav>
+
+    <!-- FLASH MESSAGES -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-zone">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show mt-2" role="alert"
+                 style="border-radius:2px; font-size:0.9rem;">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- HERO -->
+    <section class="hero">
+
+      <div class="hero-left">
+        <div class="eyebrow">Sistema de Gestión</div>
+        <h1>Control de<br><span class="accent">Personal</span><br>Logístico</h1>
+        <p class="hero-desc">
+          Administra el alta, consulta y seguimiento de empleados del almacén
+          desde un único panel centralizado.
+        </p>
+        <div class="stats">
+          <div class="stat-item">
+            <div class="stat-num">02</div>
+            <div class="stat-label">Módulos activos</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num">MySQL</div>
+            <div class="stat-label">Base de datos</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num">Flask</div>
+            <div class="stat-label">Backend</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-right">
+        <!-- EMPLEADOS -->
+        <a href="{{ url_for('subir_empleado') }}" class="action-card">
+          <i class="bi bi-person-plus-fill card-icon"></i>
+          <div>
+            <div class="card-title">Registrar Empleado</div>
+            <div class="card-sub">Dar de alta un nuevo colaborador</div>
+          </div>
+          <i class="bi bi-arrow-right card-arrow"></i>
+        </a>
+
+        <a href="{{ url_for('ver_tabla') }}" class="action-card">
+          <i class="bi bi-table card-icon"></i>
+          <div>
+            <div class="card-title">Ver Personal</div>
+            <div class="card-sub">Consultar empleados activos</div>
+          </div>
+          <i class="bi bi-arrow-right card-arrow"></i>
+        </a>
+
+        <!-- DIVISOR -->
+        <div style="border-top:1px solid var(--gris-borde); margin: 0.2rem 0;"></div>
+
+        <!-- PAQUETES -->
+        <a href="{{ url_for('crear_paquete') }}" class="action-card">
+          <i class="bi bi-box-seam card-icon"></i>
+          <div>
+            <div class="card-title">Crear Paquete</div>
+            <div class="card-sub">Registrar paquete con ID y sección</div>
+          </div>
+          <i class="bi bi-arrow-right card-arrow"></i>
+        </a>
+
+        <a href="{{ url_for('ver_paquetes') }}" class="action-card">
+          <i class="bi bi-boxes card-icon"></i>
+          <div>
+            <div class="card-title">Ver Paquetes</div>
+            <div class="card-sub">Consultar paquetes registrados</div>
+          </div>
+          <i class="bi bi-arrow-right card-arrow"></i>
+        </a>
+      </div>
+
+    </section>
+
+    <footer>
+      &copy; 2024 &nbsp;·&nbsp; LogiSys Almacén &nbsp;·&nbsp; Todos los derechos reservados
+    </footer>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LogiSys — Acceso</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <style>
+    :root {
+      --amarillo:  #F5C400;
+      --negro:     #0D0D0D;
+      --gris-osc:  #1A1A1A;
+      --gris-med:  #2B2B2B;
+      --gris-borde:#3A3A3A;
+      --blanco:    #F0EDE8;
+      --texto-sec: #888;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--negro);
+      color: var(--blanco);
+      font-family: 'Barlow', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Fondo con patrón de rejilla */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--gris-borde) 1px, transparent 1px),
+        linear-gradient(90deg, var(--gris-borde) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.18;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Franja diagonal decorativa */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -20%;
+      right: -10%;
+      width: 55%;
+      height: 140%;
+      background: linear-gradient(135deg, var(--amarillo) 0%, #D4A800 100%);
+      clip-path: polygon(18% 0, 100% 0, 100% 100%, 0% 100%);
+      opacity: 0.04;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* NAVBAR */
+    .navbar-logis {
+      border-bottom: 1px solid var(--gris-borde);
+      background: rgba(13,13,13,0.92);
+      backdrop-filter: blur(8px);
+      padding: 0.9rem 2rem;
+    }
+    .navbar-logis .brand {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 1.5rem;
+      letter-spacing: 0.08em;
+      color: var(--blanco);
+      text-decoration: none;
+    }
+    .navbar-logis .brand span { color: var(--amarillo); }
+    .nav-tag {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--texto-sec);
+      border: 1px solid var(--gris-borde);
+      padding: 2px 8px;
+      border-radius: 2px;
+      margin-left: 1rem;
+    }
+
+    /* LOGIN CENTRADO */
+    .login-section {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 1.5rem;
+    }
+
+    .login-box {
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .login-eyebrow {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--amarillo);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .login-eyebrow::before {
+      content: '';
+      display: inline-block;
+      width: 28px;
+      height: 2px;
+      background: var(--amarillo);
+    }
+
+    .login-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 2.8rem;
+      font-weight: 800;
+      line-height: 0.95;
+      letter-spacing: -0.01em;
+      text-transform: uppercase;
+      color: var(--blanco);
+      margin-bottom: 0.5rem;
+    }
+    .login-title .accent { color: var(--amarillo); }
+
+    .login-subtitle {
+      font-size: 0.85rem;
+      font-weight: 300;
+      color: var(--texto-sec);
+      margin-bottom: 2.2rem;
+    }
+
+    /* Tarjeta del formulario */
+    .login-card {
+      background: var(--gris-osc);
+      border: 1px solid var(--gris-borde);
+      border-radius: 2px;
+      padding: 2rem 2rem 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .login-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--amarillo), #D4A800);
+    }
+
+    /* Labels */
+    .form-label-logis {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--texto-sec);
+      margin-bottom: 0.4rem;
+      display: block;
+    }
+
+    /* Inputs */
+    .input-logis {
+      width: 100%;
+      background: var(--gris-med);
+      border: 1px solid var(--gris-borde);
+      border-radius: 2px;
+      color: var(--blanco);
+      font-family: 'Barlow', sans-serif;
+      font-size: 0.95rem;
+      padding: 0.7rem 1rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+    .input-logis::placeholder { color: var(--texto-sec); }
+    .input-logis:focus {
+      border-color: var(--amarillo);
+      box-shadow: 0 0 0 3px rgba(245,196,0,0.1);
+    }
+
+    /* Input con ícono */
+    .input-wrap {
+      position: relative;
+    }
+    .input-icon {
+      position: absolute;
+      left: 0.9rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--texto-sec);
+      font-size: 1rem;
+      pointer-events: none;
+      transition: color 0.2s;
+    }
+    .input-wrap:focus-within .input-icon { color: var(--amarillo); }
+    .input-logis.has-icon { padding-left: 2.5rem; }
+
+    /* Toggle contraseña */
+    .toggle-pass {
+      position: absolute;
+      right: 0.9rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--texto-sec);
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 0;
+      transition: color 0.2s;
+    }
+    .toggle-pass:hover { color: var(--amarillo); }
+
+    /* Botón */
+    .btn-logis {
+      width: 100%;
+      background: var(--amarillo);
+      color: var(--negro);
+      border: none;
+      border-radius: 2px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.8rem 1.5rem;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 1.6rem;
+    }
+    .btn-logis:hover {
+      background: #D4A800;
+      transform: translateY(-1px);
+    }
+    .btn-logis:active { transform: translateY(0); }
+
+    /* Divisor */
+    .form-divider {
+      border: none;
+      border-top: 1px solid var(--gris-borde);
+      margin: 1.5rem 0;
+    }
+
+    /* Flash messages */
+    .flash-zone {
+      position: relative;
+      z-index: 10;
+      padding: 0 2rem;
+      max-width: 1200px;
+      margin: 1rem auto 0;
+      width: 100%;
+    }
+
+    footer {
+      border-top: 1px solid var(--gris-borde);
+      padding: 1rem 2rem;
+      text-align: center;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gris-borde);
+      position: relative;
+      z-index: 1;
+    }
+
+    @media (max-width: 480px) {
+      .login-card { padding: 1.5rem 1.2rem; }
+      .login-title { font-size: 2.2rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="wrapper">
+
+    <!-- NAVBAR -->
+    <nav class="navbar-logis d-flex align-items-center">
+      <a href="/" class="brand">LOGI<span>SYS</span></a>
+      <span class="nav-tag">Almacén v1.0</span>
+    </nav>
+
+    <!-- FLASH MESSAGES -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-zone">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show mt-2" role="alert"
+                 style="border-radius:2px; font-size:0.9rem;">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- LOGIN -->
+    <section class="login-section">
+      <div class="login-box">
+
+        <div class="login-eyebrow">Acceso al sistema</div>
+        <h1 class="login-title">Iniciar<br><span class="accent">Sesión</span></h1>
+        <p class="login-subtitle">Ingresa tus credenciales para continuar</p>
+
+        <div class="login-card">
+          <form method="POST" action="{{ url_for('login') }}">
+
+            <!-- NSS (usuario) -->
+            <div class="mb-3">
+              <label class="form-label-logis" for="correo">Correo electrónico</label>
+              <div class="input-wrap">
+                <i class="bi bi-envelope-at input-icon"></i>
+                <input
+                  type="email"
+                  id="correo"
+                  name="correo"
+                  class="input-logis has-icon"
+                  placeholder="nombre.apellido@almacenes.com"
+                  required
+                  autofocus
+                />
+              </div>
+            </div>
+
+            <hr class="form-divider">
+
+            <!-- Contraseña -->
+            <div class="mb-1">
+              <label class="form-label-logis" for="password">Contraseña</label>
+              <div class="input-wrap">
+                <i class="bi bi-lock input-icon"></i>
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  class="input-logis has-icon"
+                  placeholder="••••••••"
+                  required
+                  style="padding-right: 2.8rem;"
+                />
+                <button type="button" class="toggle-pass" onclick="togglePass()" title="Mostrar/ocultar contraseña">
+                  <i class="bi bi-eye" id="eyeIcon"></i>
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" class="btn-logis">
+              <i class="bi bi-box-arrow-in-right"></i>
+              Entrar
+            </button>
+
+          </form>
+        </div>
+
+      </div>
+    </section>
+
+    <footer>
+      &copy; 2024 &nbsp;·&nbsp; LogiSys Almacén &nbsp;·&nbsp; Todos los derechos reservados
+    </footer>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    function togglePass() {
+      const input = document.getElementById('password');
+      const icon  = document.getElementById('eyeIcon');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('bi-eye', 'bi-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.replace('bi-eye-slash', 'bi-eye');
+      }
+    }
+  </script>
+</body>
+</html>
