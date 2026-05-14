@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LogiSys — Almacén Visual</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <style>
+    /* ── VARIABLES ───────────────────────────── */
+    :root {
+      --amarillo:   #F5C400;
+      --negro:      #0D0D0D;
+      --gris-osc:   #1A1A1A;
+      --gris-med:   #2B2B2B;
+      --gris-borde: #3A3A3A;
+      --blanco:     #F0EDE8;
+      --texto-sec:  #888;
+      --verde:      #4ADE80;
+      --azul:       #60A5FA;
+      --naranja:    #FB923C;
+      --rojo:       #F87171;
+      --morado:     #C084FC;
+      --cyan:       #22D3EE;
+    }
+
+    /* ── RESET + BASE ────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--negro);
+      color: var(--blanco);
+      font-family: 'Barlow', sans-serif;
+      min-height: 100vh;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(var(--gris-borde) 1px, transparent 1px),
+        linear-gradient(90deg, var(--gris-borde) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.12;
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ── NAVBAR ──────────────────────────────── */
+    .navbar-logis {
+      border-bottom: 1px solid var(--gris-borde);
+      background: rgba(13,13,13,0.95);
+      backdrop-filter: blur(10px);
+      padding: 0.9rem 2rem;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .brand {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800; font-size: 1.5rem;
+      letter-spacing: 0.08em; color: var(--blanco); text-decoration: none;
+    }
+    .brand span { color: var(--amarillo); }
+    .nav-tag {
+      font-size: 0.62rem; font-weight: 600; letter-spacing: 0.2em;
+      text-transform: uppercase; color: var(--texto-sec);
+      border: 1px solid var(--gris-borde); padding: 2px 8px;
+      border-radius: 2px; margin-left: 1rem;
+    }
+    .btn-nav {
+      font-size: 0.7rem; font-weight: 600; letter-spacing: 0.15em;
+      text-transform: uppercase; color: var(--texto-sec);
+      text-decoration: none; border: 1px solid var(--gris-borde);
+      padding: 3px 10px; border-radius: 2px; transition: all 0.2s;
+      background: none; cursor: pointer;
+    }
+    .btn-nav:hover { color: var(--amarillo); border-color: var(--amarillo); }
+
+    /* ── LAYOUT ──────────────────────────────── */
+    .page { position: relative; z-index: 1; padding: 2rem; max-width: 1300px; margin: 0 auto; }
+
+    /* ── PAGE HEADER ─────────────────────────── */
+    .page-eyebrow {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.28em;
+      text-transform: uppercase; color: var(--amarillo);
+      display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.6rem;
+    }
+    .page-eyebrow::before { content:''; width:28px; height:2px; background:var(--amarillo); }
+    .page-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 3rem; font-weight: 800; text-transform: uppercase;
+      line-height: 0.9; letter-spacing: -0.01em;
+    }
+    .page-title .acc { color: var(--amarillo); }
+
+    /* ── GRID PRINCIPAL ──────────────────────── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    /* ── PANEL GENÉRICO ──────────────────────── */
+    .panel {
+      background: var(--gris-osc);
+      border: 1px solid var(--gris-borde);
+      border-radius: 2px;
+      position: relative; overflow: hidden;
+    }
+    .panel-stripe {
+      position: absolute; top:0; left:0; right:0; height:3px;
+      background: linear-gradient(90deg, var(--amarillo), #D4A800);
+    }
+    .panel-header {
+      padding: 1rem 1.2rem 0.8rem;
+      border-bottom: 1px solid var(--gris-borde);
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    }
+    .panel-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.85rem; font-weight: 700; letter-spacing: 0.2em;
+      text-transform: uppercase; color: var(--blanco);
+    }
+    .panel-body { padding: 1.2rem; }
+
+    /* ── ALMACÉN — GRILLA ────────────────────── */
+    .almacen-wrap { padding: 1.2rem; }
+
+    /* Cabecera de columnas */
+    .grid-col-headers {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 6px;
+      padding-left: 48px; /* ancho de row-label */
+    }
+
+    .col-label {
+      font-size: 0.6rem; font-weight: 700; letter-spacing: 0.2em;
+      text-transform: uppercase; color: var(--texto-sec);
+      text-align: center;
+    }
+
+    .grid-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+
+    .row-label {
+      width: 40px; flex-shrink: 0;
+      font-size: 0.6rem; font-weight: 700; letter-spacing: 0.15em;
+      text-transform: uppercase; color: var(--texto-sec);
+      text-align: right; padding-right: 8px;
+    }
+
+    /* ── CELDA ───────────────────────────────── */
+    .celda {
+      flex: 1;
+      min-height: 80px;
+      border: 1px solid var(--gris-borde);
+      border-radius: 2px;
+      background: var(--gris-med);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s, transform 0.1s;
+      position: relative;
+      padding: 6px 4px;
+    }
+    .celda:hover { border-color: var(--amarillo); transform: scale(1.03); z-index: 2; }
+    .celda.vacia { opacity: 0.4; }
+    .celda.vacia:hover { opacity: 1; border-color: var(--gris-borde); transform: none; cursor: default; }
+
+    /* Celda ocupada — color por tipo */
+    .celda.ocupada { border-width: 1px; }
+    .celda[data-tipo="Electrónica"]  { border-color: var(--azul);    background: rgba(96,165,250,0.08); }
+    .celda[data-tipo="Ropa"]         { border-color: var(--morado);  background: rgba(192,132,252,0.08); }
+    .celda[data-tipo="Alimentos"]    { border-color: var(--verde);   background: rgba(74,222,128,0.08); }
+    .celda[data-tipo="Muebles"]      { border-color: var(--naranja); background: rgba(251,146,60,0.08); }
+    .celda[data-tipo="Herramientas"] { border-color: var(--amarillo);background: rgba(245,196,0,0.08); }
+    .celda[data-tipo="Farmacia"]     { border-color: var(--cyan);    background: rgba(34,211,238,0.08); }
+    .celda[data-tipo="Juguetes"]     { border-color: var(--rojo);    background: rgba(248,113,113,0.08); }
+    .celda[data-tipo="Otro"]         { border-color: var(--texto-sec);background: rgba(136,136,136,0.08); }
+
+    /* Resaltado de ruta */
+    .celda.ruta-paso {
+      background: rgba(245,196,0,0.18) !important;
+      border-color: var(--amarillo) !important;
+      border-width: 2px !important;
+      animation: pulso 0.8s ease-in-out;
+    }
+    .celda.ruta-destino {
+      background: rgba(245,196,0,0.35) !important;
+      border-color: var(--amarillo) !important;
+      border-width: 2px !important;
+      box-shadow: 0 0 16px rgba(245,196,0,0.4);
+    }
+    .celda.entrada {
+      border-color: var(--verde) !important;
+      background: rgba(74,222,128,0.12) !important;
+    }
+    @keyframes pulso {
+      0%,100% { opacity:1; } 50% { opacity:0.6; }
+    }
+
+    .celda-pkg-id {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.85rem; font-weight: 700;
+      color: var(--blanco); letter-spacing: 0.05em;
+    }
+    .celda-tipo {
+      font-size: 0.55rem; font-weight: 600; letter-spacing: 0.15em;
+      text-transform: uppercase; color: var(--texto-sec);
+      margin-top: 2px; text-align: center;
+    }
+    .celda-orden {
+      position: absolute; top: 4px; right: 5px;
+      font-size: 0.5rem; font-weight: 700; letter-spacing: 0.1em;
+      color: var(--texto-sec); background: var(--negro);
+      padding: 1px 4px; border-radius: 1px;
+    }
+    .celda-vacia-icon { font-size: 1rem; opacity: 0.2; }
+
+    /* Punto de entrada */
+    .entrada-label {
+      display: flex; align-items: center; gap: 0.4rem;
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--verde);
+      margin-bottom: 0.5rem; padding-left: 48px;
+    }
+    .entrada-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--verde); animation: blink 1.5s infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+    /* ── LEYENDA ─────────────────────────────── */
+    .leyenda {
+      display: flex; flex-wrap: wrap; gap: 0.5rem;
+      padding: 0.8rem 1.2rem;
+      border-top: 1px solid var(--gris-borde);
+    }
+    .leyenda-item {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--texto-sec);
+    }
+    .leyenda-dot {
+      width: 8px; height: 8px; border-radius: 1px; flex-shrink: 0;
+    }
+
+    /* ── PANEL DERECHO ───────────────────────── */
+    .right-col { display: flex; flex-direction: column; gap: 1.2rem; }
+
+    /* ── FORMULARIO RÁPIDO ───────────────────── */
+    .form-label-logis {
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.2em;
+      text-transform: uppercase; color: var(--texto-sec);
+      display: block; margin-bottom: 0.35rem;
+    }
+    .input-logis, .select-logis {
+      width: 100%; background: var(--gris-med);
+      border: 1px solid var(--gris-borde); border-radius: 2px;
+      color: var(--blanco); font-family: 'Barlow', sans-serif;
+      font-size: 0.9rem; padding: 0.55rem 0.8rem; outline: none;
+      transition: border-color 0.2s; appearance: none;
+    }
+    .input-logis:focus, .select-logis:focus { border-color: var(--amarillo); }
+    .input-logis::placeholder { color: var(--texto-sec); }
+    .select-logis option { background: var(--gris-med); }
+
+    .select-wrap { position: relative; }
+    .select-wrap::after {
+      content:'\F282'; font-family:'bootstrap-icons';
+      position:absolute; right:0.7rem; top:50%; transform:translateY(-50%);
+      color:var(--texto-sec); pointer-events:none; font-size:0.8rem;
+    }
+
+    .btn-primary-logis {
+      width: 100%; background: var(--amarillo); color: var(--negro);
+      border: none; border-radius: 2px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.95rem; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; padding: 0.7rem 1rem; cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+    }
+    .btn-primary-logis:hover  { background: #D4A800; transform: translateY(-1px); }
+    .btn-primary-logis:active { transform: translateY(0); }
+    .btn-primary-logis:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .btn-outline-logis {
+      width: 100%; background: transparent;
+      border: 1px solid var(--gris-borde); border-radius: 2px;
+      color: var(--texto-sec);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.9rem; font-weight: 600; letter-spacing: 0.12em;
+      text-transform: uppercase; padding: 0.6rem 1rem; cursor: pointer;
+      transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+    }
+    .btn-outline-logis:hover { color: var(--blanco); border-color: var(--blanco); }
+
+    /* ── INFO DE PAQUETE SELECCIONADO ────────── */
+    #info-paquete { display: none; }
+    .info-field {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 0.45rem 0;
+      border-bottom: 1px solid rgba(58,58,58,0.5);
+      font-size: 0.85rem;
+    }
+    .info-field:last-child { border-bottom: none; }
+    .info-key {
+      font-size: 0.62rem; font-weight: 700; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--texto-sec);
+    }
+    .info-val {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.82rem; color: var(--blanco); text-align: right;
+    }
+    .info-val.accent { color: var(--amarillo); }
+
+    /* ── RUTA ─────────────────────────────────── */
+    #ruta-panel { display: none; }
+    .ruta-steps {
+      display: flex; flex-direction: column; gap: 4px;
+      max-height: 180px; overflow-y: auto;
+    }
+    .ruta-step {
+      display: flex; align-items: center; gap: 0.5rem;
+      font-size: 0.78rem; color: var(--texto-sec);
+      padding: 3px 0;
+    }
+    .ruta-step i { color: var(--amarillo); font-size: 0.7rem; }
+    .ruta-step.destino { color: var(--amarillo); font-weight: 600; }
+    .ruta-step.inicio  { color: var(--verde); }
+
+    /* ── PAQUETES SIN POSICIÓN ───────────────── */
+    .sin-pos-list { max-height: 130px; overflow-y: auto; }
+    .sin-pos-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.4rem 0;
+      border-bottom: 1px solid rgba(58,58,58,0.4);
+      font-size: 0.82rem;
+    }
+    .sin-pos-item:last-child { border-bottom: none; }
+
+    /* ── BÚSQUEDA ────────────────────────────── */
+    .search-wrap { position: relative; }
+    .search-wrap input { padding-right: 2.4rem; }
+    .search-icon {
+      position: absolute; right: 0.7rem; top:50%; transform:translateY(-50%);
+      color: var(--texto-sec); pointer-events: none;
+    }
+
+    /* ── MENSAJES ────────────────────────────── */
+    .msg {
+      font-size: 0.8rem; padding: 0.5rem 0.7rem; border-radius: 2px;
+      margin-top: 0.6rem; display: none;
+    }
+    .msg.ok    { background: rgba(74,222,128,0.1);  border:1px solid rgba(74,222,128,0.3);  color: var(--verde); }
+    .msg.err   { background: rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.3); color: var(--rojo); }
+    .msg.info  { background: rgba(245,196,0,0.1);   border:1px solid rgba(245,196,0,0.3);   color: var(--amarillo); }
+
+    /* ── SPINNER ─────────────────────────────── */
+    .spin { display:inline-block; animation: girar 0.7s linear infinite; }
+    @keyframes girar { to { transform: rotate(360deg); } }
+
+    /* ── RESPONSIVE ──────────────────────────── */
+    @media (max-width: 900px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .right-col { flex-direction: row; flex-wrap: wrap; }
+      .right-col .panel { flex: 1 1 280px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar-logis d-flex align-items-center">
+  <a href="{{ url_for('index') }}" class="brand">LOGI<span>SYS</span></a>
+  <span class="nav-tag">Almacén Visual</span>
+  <div class="ms-auto d-flex align-items-center gap-3">
+    <span style="font-size:0.78rem;color:var(--texto-sec);">
+      <i class="bi bi-person-circle me-1"></i>{{ session.get('nombre','') }}
+    </span>
+    <a href="{{ url_for('index') }}" class="btn-nav">
+      <i class="bi bi-arrow-left me-1"></i>Dashboard
+    </a>
+    <a href="{{ url_for('logout') }}" class="btn-nav">
+      <i class="bi bi-box-arrow-right me-1"></i>Salir
+    </a>
+  </div>
+</nav>
+
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="page-eyebrow">Sistema de almacén</div>
+  <h1 class="page-title">Almacén <span class="acc">Visual</span></h1>
+
+  <div class="main-grid">
+
+    <!-- ═══════════════════════════════════════
+         COLUMNA IZQUIERDA — GRILLA DEL ALMACÉN
+    ════════════════════════════════════════ -->
+    <div>
+
+      <!-- PANEL GRILLA -->
+      <div class="panel">
+        <div class="panel-stripe"></div>
+        <div class="panel-header">
+          <span class="panel-title"><i class="bi bi-grid-3x3 me-2"></i>Mapa del almacén  <span id="lbl-grilla" style="color:var(--texto-sec);font-size:0.75rem;font-weight:400;margin-left:0.5rem;">4 × 5</span></span>
+          <div class="d-flex gap-2">
+            <button class="btn-nav" id="btn-recargar" onclick="cargarAlmacen()">
+              <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+            </button>
+            <button class="btn-nav" id="btn-organizar" onclick="organizarAlmacen()" style="color:var(--amarillo);border-color:rgba(245,196,0,0.4);">
+              <i class="bi bi-magic me-1"></i>Organizar
+            </button>
+          </div>
+        </div>
+
+        <div class="almacen-wrap">
+          <!-- Indicador de entrada -->
+          <div class="entrada-label">
+            <div class="entrada-dot"></div>
+            Entrada / Salida (F1-C1)
+          </div>
+
+          <!-- Cabeceras de columnas -->
+          <div class="grid-col-headers" id="col-headers"></div>
+
+          <!-- Filas de celdas -->
+          <div id="grilla-almacen">
+            <!-- Se genera con JS -->
+            <div style="padding:3rem;text-align:center;color:var(--texto-sec);">
+              <i class="bi bi-hourglass-split spin" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;"></i>
+              Cargando almacén...
+            </div>
+          </div>
+        </div>
+
+        <!-- LEYENDA -->
+        <div class="leyenda" id="leyenda">
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:var(--azul)"></div>Electrónica</div>
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:var(--morado)"></div>Ropa</div>
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:var(--verde)"></div>Alimentos</div>
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:var(--naranja)"></div>Muebles</div>
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:var(--amarillo)"></div>Herramientas</div>
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:var(--cyan)"></div>Farmacia</div>
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:var(--rojo)"></div>Juguetes</div>
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:var(--gris-borde)"></div>Vacío</div>
+        </div>
+      </div>
+
+      <!-- PAQUETES SIN POSICIÓN -->
+      <div class="panel mt-3" id="panel-sin-pos" style="display:none;">
+        <div class="panel-stripe" style="background:linear-gradient(90deg,var(--naranja),#ea580c);"></div>
+        <div class="panel-header">
+          <span class="panel-title" style="color:var(--naranja);">
+            <i class="bi bi-exclamation-triangle me-2"></i>Sin posición asignada
+          </span>
+          <span id="cnt-sin-pos" style="font-size:0.7rem;color:var(--naranja);"></span>
+        </div>
+        <div class="panel-body">
+          <p style="font-size:0.78rem;color:var(--texto-sec);margin-bottom:0.8rem;">
+            Estos paquetes están registrados pero el algoritmo aún no les asignó posición. Presiona <strong style="color:var(--amarillo);">Organizar</strong>.
+          </p>
+          <div class="sin-pos-list" id="sin-pos-list"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         COLUMNA DERECHA
+    ════════════════════════════════════════ -->
+    <div class="right-col">
+
+      <!-- AGREGAR PAQUETE -->
+      <div class="panel">
+        <div class="panel-stripe"></div>
+        <div class="panel-header">
+          <span class="panel-title"><i class="bi bi-plus-circle me-2"></i>Agregar paquete</span>
+        </div>
+        <div class="panel-body">
+          <div class="mb-3">
+            <label class="form-label-logis">Tipo / Sección</label>
+            <div class="select-wrap">
+              <select id="f-tipo" class="select-logis">
+                <option value="" disabled selected>Selecciona...</option>
+                <option>Electrónica</option>
+                <option>Ropa</option>
+                <option>Alimentos</option>
+                <option>Muebles</option>
+                <option>Herramientas</option>
+                <option>Farmacia</option>
+                <option>Juguetes</option>
+                <option>Otro</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label-logis">Fecha de salida</label>
+            <input type="date" id="f-fecha" class="input-logis"/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label-logis">Hora de salida</label>
+            <input type="time" id="f-hora" class="input-logis"/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label-logis">Descripción <span style="color:var(--texto-sec);font-size:0.6rem;">(opcional)</span></label>
+            <input type="text" id="f-desc" class="input-logis" placeholder="Ej. Pedido norte..."/>
+          </div>
+          <button class="btn-primary-logis" id="btn-agregar" onclick="agregarPaquete()">
+            <i class="bi bi-box-seam"></i> Agregar paquete
+          </button>
+          <div class="msg" id="msg-agregar"></div>
+        </div>
+      </div>
+
+      <!-- BUSCAR PAQUETE -->
+      <div class="panel">
+        <div class="panel-stripe" style="background:linear-gradient(90deg,var(--azul),#2563eb);"></div>
+        <div class="panel-header">
+          <span class="panel-title" style="color:var(--azul);">
+            <i class="bi bi-search me-2"></i>Buscar paquete
+          </span>
+        </div>
+        <div class="panel-body">
+          <div class="mb-2 search-wrap">
+            <input type="number" id="f-buscar-id" class="input-logis"
+                   placeholder="ID del paquete..."
+                   onkeydown="if(event.key==='Enter') buscarPaquete()"/>
+            <i class="bi bi-hash search-icon"></i>
+          </div>
+          <button class="btn-outline-logis" onclick="buscarPaquete()" style="margin-bottom:0.8rem;border-color:rgba(96,165,250,0.4);color:var(--azul);">
+            <i class="bi bi-search me-1"></i> Buscar
+          </button>
+
+          <!-- Info del paquete encontrado -->
+          <div id="info-paquete">
+            <div class="info-field">
+              <span class="info-key">ID</span>
+              <span class="info-val accent" id="i-id">—</span>
+            </div>
+            <div class="info-field">
+              <span class="info-key">Tipo</span>
+              <span class="info-val" id="i-tipo">—</span>
+            </div>
+            <div class="info-field">
+              <span class="info-key">Estado</span>
+              <span class="info-val" id="i-estado">—</span>
+            </div>
+            <div class="info-field">
+              <span class="info-key">Fecha salida</span>
+              <span class="info-val" id="i-fecha">—</span>
+            </div>
+            <div class="info-field">
+              <span class="info-key">Posición</span>
+              <span class="info-val accent" id="i-pos">—</span>
+            </div>
+            <div class="info-field">
+              <span class="info-key">Orden salida</span>
+              <span class="info-val" id="i-orden">—</span>
+            </div>
+          </div>
+          <div class="msg" id="msg-buscar"></div>
+        </div>
+      </div>
+
+      <!-- RUTA -->
+      <div class="panel" id="ruta-panel">
+        <div class="panel-stripe" style="background:linear-gradient(90deg,var(--verde),#16a34a);"></div>
+        <div class="panel-header">
+          <span class="panel-title" style="color:var(--verde);">
+            <i class="bi bi-signpost-2 me-2"></i>Ruta al paquete
+          </span>
+          <button class="btn-nav" onclick="limpiarRuta()" style="font-size:0.65rem;">
+            <i class="bi bi-x me-1"></i>Limpiar
+          </button>
+        </div>
+        <div class="panel-body">
+          <div style="font-size:0.72rem;color:var(--texto-sec);margin-bottom:0.8rem;" id="ruta-distancia"></div>
+          <div class="ruta-steps" id="ruta-steps"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ══════════════════════════════════════════════
+//  ESTADO GLOBAL
+// ══════════════════════════════════════════════
+let ESTADO = {
+  filas    : 4,
+  columnas : 5,
+  grilla   : [],        // grilla[f][c] = paquete | null
+  paqueteSeleccionado: null,
+};
+
+// Colores por tipo (deben coincidir con CSS)
+const COLORES_TIPO = {
+  'Electrónica' : '#60A5FA',
+  'Ropa'        : '#C084FC',
+  'Alimentos'   : '#4ADE80',
+  'Muebles'     : '#FB923C',
+  'Herramientas': '#F5C400',
+  'Farmacia'    : '#22D3EE',
+  'Juguetes'    : '#F87171',
+  'Otro'        : '#888888',
+};
+
+
+// ══════════════════════════════════════════════
+//  INICIALIZACIÓN
+// ══════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  // Valores por defecto del formulario
+  const hoy = new Date().toISOString().split('T')[0];
+  document.getElementById('f-fecha').value = hoy;
+  document.getElementById('f-fecha').min   = hoy;
+  document.getElementById('f-hora').value  = '08:00';
+
+  cargarAlmacen();
+});
+
+
+// ══════════════════════════════════════════════
+//  CARGAR ESTADO DEL ALMACÉN DESDE /api/almacen
+// ══════════════════════════════════════════════
+async function cargarAlmacen() {
+  const btnR = document.getElementById('btn-recargar');
+  btnR.innerHTML = '<i class="bi bi-arrow-clockwise spin me-1"></i>Cargando...';
+  btnR.disabled  = true;
+
+  try {
+    const res  = await fetch('/api/almacen');
+    const data = await res.json();
+
+    if (data.error) { console.error(data.error); return; }
+
+    ESTADO.filas    = data.filas;
+    ESTADO.columnas = data.columnas;
+    ESTADO.grilla   = data.grilla;
+
+    renderGrilla();
+    renderSinPosicion(data.sin_posicion);
+
+  } catch (e) {
+    console.error('Error cargando almacén:', e);
+  } finally {
+    btnR.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i>Actualizar';
+    btnR.disabled  = false;
+  }
+}
+
+
+// ══════════════════════════════════════════════
+//  RENDERIZAR GRILLA
+// ══════════════════════════════════════════════
+function renderGrilla() {
+  const { filas, columnas, grilla } = ESTADO;
+
+  // Cabeceras de columnas
+  const colH = document.getElementById('col-headers');
+  colH.style.gridTemplateColumns = `repeat(${columnas}, 1fr)`;
+  colH.innerHTML = Array.from({length:columnas}, (_,j) =>
+    `<div class="col-label">C${j+1}</div>`
+  ).join('');
+  document.getElementById('lbl-grilla').textContent = `${filas} × ${columnas}`;
+
+  // Filas
+  const contenedor = document.getElementById('grilla-almacen');
+  contenedor.innerHTML = '';
+
+  for (let f = 0; f < filas; f++) {
+    const fila = document.createElement('div');
+    fila.className = 'grid-row';
+
+    // Label de fila
+    const lbl = document.createElement('div');
+    lbl.className   = 'row-label';
+    lbl.textContent = `F${f+1}`;
+    fila.appendChild(lbl);
+
+    for (let c = 0; c < columnas; c++) {
+      const pkg   = grilla[f] ? grilla[f][c] : null;
+      const celda = document.createElement('div');
+      celda.className = 'celda';
+      celda.dataset.fila = f;
+      celda.dataset.col  = c;
+
+      // Resaltar entrada (0,0)
+      if (f === 0 && c === 0) celda.classList.add('entrada');
+
+      if (pkg) {
+        celda.classList.add('ocupada');
+        celda.dataset.tipo = pkg.tipo;
+        celda.dataset.id   = pkg.id;
+        celda.innerHTML = `
+          <div class="celda-orden">#${pkg.orden ?? '?'}</div>
+          <div class="celda-pkg-id">P${String(pkg.id).padStart(3,'0')}</div>
+          <div class="celda-tipo">${pkg.tipo}</div>
+        `;
+        celda.onclick = () => seleccionarCelda(f, c, pkg);
+      } else {
+        celda.classList.add('vacia');
+        celda.innerHTML = `<i class="bi bi-dash celda-vacia-icon"></i>`;
+      }
+
+      fila.appendChild(celda);
+    }
+    contenedor.appendChild(fila);
+  }
+}
+
+
+// ══════════════════════════════════════════════
+//  SIN POSICIÓN
+// ══════════════════════════════════════════════
+function renderSinPosicion(lista) {
+  const panel = document.getElementById('panel-sin-pos');
+  const cont  = document.getElementById('sin-pos-list');
+  const cnt   = document.getElementById('cnt-sin-pos');
+
+  if (!lista || lista.length === 0) {
+    panel.style.display = 'none';
+    return;
+  }
+
+  panel.style.display = '';
+  cnt.textContent     = `${lista.length} paquete${lista.length>1?'s':''}`;
+  cont.innerHTML = lista.map(p => `
+    <div class="sin-pos-item">
+      <span style="font-family:'Share Tech Mono',monospace;font-size:0.82rem;">
+        P${String(p.id).padStart(3,'0')}
+      </span>
+      <span style="font-size:0.72rem;color:var(--texto-sec);">${p.tipo}</span>
+      <span style="font-size:0.7rem;color:var(--texto-sec);">${p.fecha_salida}</span>
+    </div>
+  `).join('');
+}
+
+
+// ══════════════════════════════════════════════
+//  SELECCIONAR CELDA → mostrar info + ruta
+// ══════════════════════════════════════════════
+function seleccionarCelda(fila, col, pkg) {
+  ESTADO.paqueteSeleccionado = { fila, col, pkg };
+
+  // Rellenar info
+  document.getElementById('i-id').textContent    = `P${String(pkg.id).padStart(3,'0')}`;
+  document.getElementById('i-tipo').textContent  = pkg.tipo;
+  document.getElementById('i-estado').textContent= pkg.estado;
+  document.getElementById('i-fecha').textContent = pkg.fecha_salida;
+  document.getElementById('i-pos').textContent   = `F${fila+1}-C${col+1}`;
+  document.getElementById('i-orden').textContent = pkg.orden !== null ? `#${pkg.orden}` : '—';
+  document.getElementById('info-paquete').style.display = '';
+
+  // Rellenar campo de búsqueda
+  document.getElementById('f-buscar-id').value = pkg.id;
+  ocultarMsg('msg-buscar');
+
+  // Calcular y mostrar ruta
+  mostrarRuta(fila, col, pkg);
+}
+
+
+// ══════════════════════════════════════════════
+//  RUTA: desde (0,0) hasta (fila,col)
+//  Algoritmo simple: primero baja filas, luego avanza columnas
+// ══════════════════════════════════════════════
+function mostrarRuta(destFila, destCol, pkg) {
+  limpiarResaltadoRuta();
+
+  const pasos = calcularRuta(0, 0, destFila, destCol);
+
+  // Resaltar celdas en la grilla
+  pasos.forEach((paso, idx) => {
+    const cel = getCelda(paso.f, paso.c);
+    if (!cel) return;
+    if (idx === 0)             cel.classList.add('entrada');
+    else if (idx === pasos.length - 1) cel.classList.add('ruta-destino');
+    else                       cel.classList.add('ruta-paso');
+  });
+
+  // Mostrar panel de ruta
+  const panel = document.getElementById('ruta-panel');
+  panel.style.display = '';
+
+  const distancia = pasos.length - 1;
+  document.getElementById('ruta-distancia').textContent =
+    `Distancia Manhattan: ${distancia} paso${distancia !== 1 ? 's' : ''} desde la entrada`;
+
+  const stepsEl = document.getElementById('ruta-steps');
+  stepsEl.innerHTML = pasos.map((paso, idx) => {
+    let cls = '';
+    let ico = 'bi-arrow-right';
+    let txt = `F${paso.f+1}-C${paso.c+1}`;
+
+    if (idx === 0) {
+      cls = 'inicio'; ico = 'bi-door-open'; txt = `Entrada (F1-C1)`;
+    } else if (idx === pasos.length - 1) {
+      cls = 'destino'; ico = 'bi-box-seam';
+      txt = `Destino: P${String(pkg.id).padStart(3,'0')} — F${paso.f+1}-C${paso.c+1}`;
+    } else {
+      // Determinar dirección
+      const prev = pasos[idx-1];
+      if (paso.f > prev.f)      ico = 'bi-arrow-down';
+      else if (paso.f < prev.f) ico = 'bi-arrow-up';
+      else if (paso.c > prev.c) ico = 'bi-arrow-right';
+      else                      ico = 'bi-arrow-left';
+    }
+    return `<div class="ruta-step ${cls}"><i class="bi ${ico}"></i>${txt}</div>`;
+  }).join('');
+}
+
+function calcularRuta(fi, ci, fd, cd) {
+  // Estrategia: baja primero (eje filas), luego avanza columnas
+  const pasos = [{f: fi, c: ci}];
+  let f = fi, c = ci;
+
+  while (f !== fd) {
+    f += f < fd ? 1 : -1;
+    pasos.push({f, c});
+  }
+  while (c !== cd) {
+    c += c < cd ? 1 : -1;
+    pasos.push({f, c});
+  }
+  return pasos;
+}
+
+function limpiarResaltadoRuta() {
+  document.querySelectorAll('.celda.ruta-paso, .celda.ruta-destino').forEach(el => {
+    el.classList.remove('ruta-paso', 'ruta-destino');
+  });
+}
+
+function limpiarRuta() {
+  limpiarResaltadoRuta();
+  document.getElementById('ruta-panel').style.display = 'none';
+  document.getElementById('info-paquete').style.display = 'none';
+  ESTADO.paqueteSeleccionado = null;
+}
+
+function getCelda(f, c) {
+  return document.querySelector(`.celda[data-fila="${f}"][data-col="${c}"]`);
+}
+
+
+// ══════════════════════════════════════════════
+//  BUSCAR PAQUETE POR ID
+// ══════════════════════════════════════════════
+function buscarPaquete() {
+  const id  = parseInt(document.getElementById('f-buscar-id').value);
+  const msg = document.getElementById('msg-buscar');
+
+  if (!id || isNaN(id)) {
+    mostrarMsg(msg, 'err', 'Ingresa un ID válido.');
+    return;
+  }
+
+  // Buscar en la grilla actual
+  const { filas, columnas, grilla } = ESTADO;
+  for (let f = 0; f < filas; f++) {
+    for (let c = 0; c < columnas; c++) {
+      const pkg = grilla[f] ? grilla[f][c] : null;
+      if (pkg && pkg.id === id) {
+        ocultarMsg(msg);
+        seleccionarCelda(f, c, pkg);
+        // Scroll suave al panel de búsqueda
+        document.getElementById('info-paquete').scrollIntoView({behavior:'smooth', block:'nearest'});
+        return;
+      }
+    }
+  }
+  mostrarMsg(msg, 'err', `Paquete #${id} no encontrado en la grilla. Puede no tener posición aún.`);
+  document.getElementById('info-paquete').style.display = 'none';
+  limpiarResaltadoRuta();
+}
+
+
+// ══════════════════════════════════════════════
+//  AGREGAR PAQUETE (POST → /crear_paquete luego organiza)
+// ══════════════════════════════════════════════
+async function agregarPaquete() {
+  const tipo  = document.getElementById('f-tipo').value;
+  const fecha = document.getElementById('f-fecha').value;
+  const hora  = document.getElementById('f-hora').value;
+  const desc  = document.getElementById('f-desc').value;
+  const msg   = document.getElementById('msg-agregar');
+  const btn   = document.getElementById('btn-agregar');
+
+  if (!tipo || !fecha || !hora) {
+    mostrarMsg(msg, 'err', 'Completa tipo, fecha y hora.');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-hourglass-split spin"></i> Guardando...';
+
+  try {
+    // 1. Crear el paquete vía form POST
+    const fd = new FormData();
+    fd.append('tipo',         tipo);
+    fd.append('estado',       'En almacén');
+    fd.append('fecha_salida', fecha);
+    fd.append('hora_salida',  hora);
+    fd.append('descripcion',  desc);
+
+    const res = await fetch('/crear_paquete', { method: 'POST', body: fd });
+
+    // Flask hace redirect a /ver_paquetes al tener éxito
+    // Si la respuesta final no es JSON significa que fue exitoso
+    if (!res.ok && res.headers.get('content-type')?.includes('application/json')) {
+      const err = await res.json();
+      mostrarMsg(msg, 'err', err.error || 'Error al crear paquete.');
+      return;
+    }
+
+    mostrarMsg(msg, 'ok', 'Paquete creado. Organizando almacén...');
+
+    // 2. Ejecutar algoritmo de organización
+    btn.innerHTML = '<i class="bi bi-magic spin"></i> Organizando...';
+    const resOrg = await fetch('/organizar_almacen?filas=4&columnas=5');
+    const dataOrg = await resOrg.json();
+
+    if (dataOrg.error) {
+      mostrarMsg(msg, 'info', 'Paquete creado pero error al organizar: ' + dataOrg.error);
+    } else {
+      mostrarMsg(msg, 'ok', `✓ Listo. ${dataOrg.resultado.length} paquete(s) organizados.`);
+    }
+
+    // 3. Recargar grilla
+    await cargarAlmacen();
+
+    // Limpiar formulario
+    document.getElementById('f-tipo').value = '';
+    document.getElementById('f-desc').value = '';
+
+  } catch (e) {
+    mostrarMsg(msg, 'err', 'Error de red: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-box-seam"></i> Agregar paquete';
+  }
+}
+
+
+// ══════════════════════════════════════════════
+//  ORGANIZAR ALMACÉN (solo reorganiza)
+// ══════════════════════════════════════════════
+async function organizarAlmacen() {
+  const btn = document.getElementById('btn-organizar');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-magic spin me-1"></i>Organizando...';
+
+  try {
+    const res  = await fetch('/organizar_almacen?filas=4&columnas=5');
+    const data = await res.json();
+
+    if (data.error) {
+      alert('Error: ' + data.error);
+      return;
+    }
+
+    await cargarAlmacen();
+
+    btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Organizado';
+    btn.style.color       = 'var(--verde)';
+    btn.style.borderColor = 'rgba(74,222,128,0.4)';
+
+    setTimeout(() => {
+      btn.innerHTML     = '<i class="bi bi-magic me-1"></i>Organizar';
+      btn.style.color   = 'var(--amarillo)';
+      btn.style.borderColor = 'rgba(245,196,0,0.4)';
+      btn.disabled      = false;
+    }, 2500);
+
+  } catch(e) {
+    alert('Error de red: ' + e.message);
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-magic me-1"></i>Organizar';
+  }
+}
+
+
+// ══════════════════════════════════════════════
+//  HELPERS DE MENSAJES
+// ══════════════════════════════════════════════
+function mostrarMsg(el, tipo, texto) {
+  el.className     = `msg ${tipo}`;
+  el.textContent   = texto;
+  el.style.display = 'block';
+}
+function ocultarMsg(el) {
+  if (typeof el === 'string') el = document.getElementById(el);
+  if (el) el.style.display = 'none';
+}
+</script>
+</body>
+</html>
