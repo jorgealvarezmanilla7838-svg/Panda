@@ -13,7 +13,6 @@
 
   <div class="wrapper">
 
-    <!-- NAVBAR -->
     <nav class="navbar-logis d-flex align-items-center">
       <a href="{{ url_for('index') }}" class="brand">LOGI<span>SYS</span></a>
       <span class="nav-tag">Almacén v1.0</span>
@@ -32,7 +31,6 @@
       </div>
     </nav>
 
-    <!-- FLASH MESSAGES -->
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         <div class="flash-zone">
@@ -47,7 +45,6 @@
       {% endif %}
     {% endwith %}
 
-    <!-- HERO -->
     <section class="hero">
 
       <div class="hero-left">
@@ -74,7 +71,6 @@
       </div>
 
       <div class="hero-right">
-        <!-- EMPLEADOS -->
         <a href="{{ url_for('subir_empleado') }}" class="action-card">
           <i class="bi bi-person-plus-fill card-icon"></i>
           <div>
@@ -93,10 +89,8 @@
           <i class="bi bi-arrow-right card-arrow"></i>
         </a>
 
-        <!-- DIVISOR -->
         <div style="border-top:1px solid var(--gris-borde); margin: 0.2rem 0;"></div>
 
-        <!-- ALMACÉN VISUAL -->
         <a href="{{ url_for('almacen') }}" class="action-card" style="border-color: rgba(245,196,0,0.4); background: rgba(245,196,0,0.04);">
           <i class="bi bi-grid-3x3 card-icon" style="color:var(--amarillo);"></i>
           <div>
@@ -106,10 +100,8 @@
           <i class="bi bi-arrow-right card-arrow"></i>
         </a>
 
-        <!-- DIVISOR -->
         <div style="border-top:1px solid var(--gris-borde); margin: 0.2rem 0;"></div>
 
-        <!-- PAQUETES -->
         <a href="{{ url_for('crear_paquete') }}" class="action-card">
           <i class="bi bi-box-seam card-icon"></i>
           <div>

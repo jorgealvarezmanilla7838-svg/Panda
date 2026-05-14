@@ -1,8 +1,3 @@
--- ============================================================
---  LogiSys — Tabla de paquetes
---  Ejecutar en phpMyAdmin o MySQL sobre la base de datos `pandas`
--- ============================================================
-
 CREATE TABLE IF NOT EXISTS paquetes (
     paquete_id   INT          NOT NULL AUTO_INCREMENT PRIMARY KEY,
     tipo         VARCHAR(60)  NOT NULL,

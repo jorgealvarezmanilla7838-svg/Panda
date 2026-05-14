@@ -7,12 +7,11 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
-  <link rel="stylesheet" href="../static/css/almacen.css">
+  <link rel="stylesheet" href="../static/css/ver_paquetes.css">
 </head>
 <body>
 <div class="wrapper">
 
-  <!-- NAVBAR -->
   <nav class="navbar-logis d-flex align-items-center">
     <a href="{{ url_for('index') }}" class="brand">LOGI<span>SYS</span></a>
     <span class="nav-tag">Almacén v1.0</span>
@@ -29,7 +28,6 @@
     </div>
   </nav>
 
-  <!-- FLASH -->
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
       <div class="flash-zone">
@@ -43,7 +41,6 @@
     {% endif %}
   {% endwith %}
 
-  <!-- CONTENIDO -->
   <div class="page-content">
 
     <div class="page-header">
@@ -61,7 +58,6 @@
       </div>
     </div>
 
-    <!-- FILTROS -->
     <div class="filter-bar">
       <input type="text" id="buscar" class="input-logis" placeholder="🔍  Buscar por ID o descripción..." style="flex:1; min-width:200px;"/>
       <select id="filtro-tipo" class="select-filter">
@@ -84,7 +80,6 @@
       </select>
     </div>
 
-    <!-- TABLA -->
     <div class="table-wrap">
       {% if paquetes %}
       <table class="table-logis" id="tabla-paquetes">
@@ -156,58 +151,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-  // ── Filtrado en vivo ──────────────────────────────
-  function filtrar() {
-    const texto  = document.getElementById('buscar').value.toLowerCase();
-    const tipo   = document.getElementById('filtro-tipo').value.toLowerCase();
-    const estado = document.getElementById('filtro-estado').value.toLowerCase();
-    const filas  = document.querySelectorAll('#tabla-paquetes tbody tr');
-    filas.forEach(fila => {
-      const id   = fila.cells[0].textContent.toLowerCase();
-      const tip  = fila.cells[1].textContent.toLowerCase();
-      const est  = fila.cells[2].textContent.toLowerCase();
-      const desc = fila.cells[5].textContent.toLowerCase();
-      const ok = (texto === '' || id.includes(texto) || desc.includes(texto))
-              && (tipo   === '' || tip.includes(tipo))
-              && (estado === '' || est.includes(estado));
-      fila.style.display = ok ? '' : 'none';
-    });
-  }
-  document.getElementById('buscar').addEventListener('input', filtrar);
-  document.getElementById('filtro-tipo').addEventListener('change', filtrar);
-  document.getElementById('filtro-estado').addEventListener('change', filtrar);
-
-  // ── Organizar almacén (llama al algoritmo en el backend) ──
-  function organizarAlmacen() {
-    const btn = document.getElementById('btn-organizar');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Organizando...';
-
-    fetch('/organizar_almacen?filas=4&columnas=5')
-      .then(r => r.json())
-      .then(data => {
-        if (data.error) {
-          alert('Error: ' + data.error);
-          return;
-        }
-        // Actualiza las celdas de posición y orden sin recargar la página
-        data.resultado.forEach(p => {
-          const posCell   = document.getElementById('pos-'   + p.paquete_id);
-          const ordenCell = document.getElementById('orden-' + p.paquete_id);
-          if (posCell)   posCell.textContent   = p.posicion_label;
-          if (ordenCell) ordenCell.textContent = p.orden;
-        });
-        btn.innerHTML = '<i class="bi bi-check-circle"></i> Organizado';
-        btn.style.borderColor = '#6ddc94';
-        btn.style.color       = '#6ddc94';
-      })
-      .catch(err => {
-        alert('Error de red: ' + err);
-        btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-grid-3x3-gap"></i> Organizar almacén';
-      });
-  }
-</script>
+<script src="../static/js/ver_paquetes.js"></script>
 </body>
 </html>

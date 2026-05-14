@@ -8,31 +8,16 @@ from algoritmo_paquetes import organizar
 import unicodedata
 import re
 
-# ──────────────────────────────────────────────
-#  FLASK — template_folder apunta a la misma carpeta
-#  donde está app.py, por si los HTMLs NO están en
-#  una subcarpeta "templates/".
-# ──────────────────────────────────────────────
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__, template_folder=BASE_DIR)
 app.secret_key = 'logistica_almacen_secret_2024'
 
 
-# ──────────────────────────────────────────────
-#  HELPER: cursor que devuelve dicts.
-#  Usamos MySQLCursorDict en lugar de dictionary=True
-#  para evitar advertencias de Pylance.
-# ──────────────────────────────────────────────
 def dict_cursor(connection):
     import mysql.connector.cursor as _mc
     return connection.cursor(cursor_class=_mc.MySQLCursorDict)
 
 
-# ──────────────────────────────────────────────
-#  GENERAR CORREO
-#  nombreapellido@almacenes.com
-#  Si ya existe, añade sufijo numérico.
-# ──────────────────────────────────────────────
 def generar_correo(nombre: str, apellido: str, connection) -> str:
     def limpiar(texto: str) -> str:
         texto = texto.strip().lower()
@@ -64,9 +49,6 @@ def generar_correo(nombre: str, apellido: str, connection) -> str:
         sufijo += 1
 
 
-# ──────────────────────────────────────────────
-#  DECORADOR: requiere sesion activa
-# ──────────────────────────────────────────────
 def login_requerido(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -76,10 +58,6 @@ def login_requerido(f):
         return f(*args, **kwargs)
     return decorated
 
-
-# ──────────────────────────────────────────────
-#  LOGIN
-# ──────────────────────────────────────────────
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -133,9 +111,6 @@ def login():
     return render_template('template/index.html')
 
 
-# ──────────────────────────────────────────────
-#  LOGOUT
-# ──────────────────────────────────────────────
 @app.route('/logout')
 def logout():
     session.clear()
@@ -143,18 +118,12 @@ def logout():
     return redirect(url_for('login'))
 
 
-# ──────────────────────────────────────────────
-#  DASHBOARD
-# ──────────────────────────────────────────────
 @app.route('/dashboard')
 @login_requerido
 def index():
     return render_template('template/dashboard.html')
 
 
-# ──────────────────────────────────────────────
-#  REGISTRAR EMPLEADO
-# ──────────────────────────────────────────────
 @app.route('/subir_empleado', methods=['GET', 'POST'])
 @login_requerido
 def subir_empleado():
@@ -216,9 +185,6 @@ def subir_empleado():
     return render_template('template/subir_empleado.html')
 
 
-# ──────────────────────────────────────────────
-#  VER TABLA DE EMPLEADOS
-# ──────────────────────────────────────────────
 @app.route('/ver_tabla')
 @login_requerido
 def ver_tabla():
@@ -246,10 +212,6 @@ def ver_tabla():
         cursor.close()
         connection.close()
 
-
-# ──────────────────────────────────────────────
-#  ELIMINAR EMPLEADO (soft delete)
-# ──────────────────────────────────────────────
 @app.route('/eliminar_empleado/<int:empleado_id>', methods=['POST'])
 @login_requerido
 def eliminar_empleado(empleado_id):
@@ -276,9 +238,6 @@ def eliminar_empleado(empleado_id):
     return redirect(url_for('ver_tabla'))
 
 
-# ──────────────────────────────────────────────
-#  CREAR PAQUETE
-# ──────────────────────────────────────────────
 @app.route('/crear_paquete', methods=['GET', 'POST'])
 @login_requerido
 def crear_paquete():
@@ -338,9 +297,6 @@ def crear_paquete():
     return render_template('template/crear_paquete.html', siguiente_id=siguiente_id)
 
 
-# ──────────────────────────────────────────────
-#  VER PAQUETES
-# ──────────────────────────────────────────────
 @app.route('/ver_paquetes')
 @login_requerido
 def ver_paquetes():
@@ -363,8 +319,6 @@ def ver_paquetes():
         """)
         paquetes_raw = cursor.fetchall()
 
-        # MySQL devuelve TIME como timedelta — convertir a datetime.time
-        # para que .strftime() funcione en el template
         import datetime
         paquetes = []
         for p in paquetes_raw:
@@ -385,9 +339,6 @@ def ver_paquetes():
         connection.close()
 
 
-# ──────────────────────────────────────────────
-#  ELIMINAR PAQUETE (soft delete)
-# ──────────────────────────────────────────────
 @app.route('/eliminar_paquete/<int:paquete_id>', methods=['POST'])
 @login_requerido
 def eliminar_paquete(paquete_id):
@@ -414,10 +365,6 @@ def eliminar_paquete(paquete_id):
     return redirect(url_for('ver_paquetes'))
 
 
-# ──────────────────────────────────────────────
-#  ORGANIZAR ALMACEN
-#  GET /organizar_almacen?filas=4&columnas=5
-# ──────────────────────────────────────────────
 @app.route('/organizar_almacen')
 @login_requerido
 def organizar_almacen():
@@ -473,9 +420,6 @@ def organizar_almacen():
 
 
 
-# ──────────────────────────────────────────────
-#  ALMACÉN VISUAL
-# ──────────────────────────────────────────────
 @app.route('/almacen')
 @login_requerido
 def almacen():
@@ -485,11 +429,6 @@ def almacen():
 @app.route('/api/almacen')
 @login_requerido
 def api_almacen():
-    """
-    Devuelve el estado actual del almacén como JSON.
-    La grilla es de 4 filas x 5 columnas (20 celdas).
-    Cada celda contiene el paquete que la ocupa o null.
-    """
     import datetime as dt
     FILAS    = 4
     COLUMNAS = 5
@@ -510,7 +449,6 @@ def api_almacen():
         """)
         paquetes = cursor.fetchall()
 
-        # Construir grilla vacía
         grilla = [[None] * COLUMNAS for _ in range(FILAS)]
 
         for p in paquetes:
@@ -526,7 +464,6 @@ def api_almacen():
                     'descripcion' : p['descripcion'] or '',
                 }
 
-        # Paquetes sin posición (aún no organizados)
         cursor.execute("""
             SELECT paquete_id, tipo, estado, fecha_salida, descripcion
             FROM   paquetes
