@@ -8,31 +8,16 @@ from algoritmo_paquetes import organizar
 import unicodedata
 import re
 
-# ──────────────────────────────────────────────
-#  FLASK — template_folder apunta a la misma carpeta
-#  donde está app.py, por si los HTMLs NO están en
-#  una subcarpeta "templates/".
-# ──────────────────────────────────────────────
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__, template_folder=BASE_DIR)
 app.secret_key = 'logistica_almacen_secret_2024'
 
 
-# ──────────────────────────────────────────────
-#  HELPER: cursor que devuelve dicts.
-#  Usamos MySQLCursorDict en lugar de dictionary=True
-#  para evitar advertencias de Pylance.
-# ──────────────────────────────────────────────
 def dict_cursor(connection):
     import mysql.connector.cursor as _mc
     return connection.cursor(cursor_class=_mc.MySQLCursorDict)
 
 
-# ──────────────────────────────────────────────
-#  GENERAR CORREO
-#  nombreapellido@almacenes.com
-#  Si ya existe, añade sufijo numérico.
-# ──────────────────────────────────────────────
 def generar_correo(nombre: str, apellido: str, connection) -> str:
     def limpiar(texto: str) -> str:
         texto = texto.strip().lower()
@@ -64,9 +49,6 @@ def generar_correo(nombre: str, apellido: str, connection) -> str:
         sufijo += 1
 
 
-# ──────────────────────────────────────────────
-#  DECORADOR: requiere sesion activa
-# ──────────────────────────────────────────────
 def login_requerido(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -77,9 +59,6 @@ def login_requerido(f):
     return decorated
 
 
-# ──────────────────────────────────────────────
-#  LOGIN
-# ──────────────────────────────────────────────
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -92,13 +71,13 @@ def login():
 
         if not correo or not password:
             flash('Por favor, ingresa tu correo y contrasena.', 'danger')
-            return render_template('index.html')
+            return render_template('template/index.html')
 
         pass_hash  = hashlib.sha256(password.encode()).hexdigest()
         connection = get_connection()
         if connection is None:
             flash('Error de conexion con la base de datos.', 'danger')
-            return render_template('index.html')
+            return render_template('template/index.html')
 
         try:
             cursor = dict_cursor(connection)
@@ -117,11 +96,11 @@ def login():
                 return redirect(url_for('index'))
             else:
                 flash('Correo o contrasena incorrectos.', 'danger')
-                return render_template('index.html')
+                return render_template('template/index.html')
 
         except Exception as e:
             flash(f'Error al iniciar sesion: {str(e)}', 'danger')
-            return render_template('index.html')
+            return render_template('template/index.html')
         finally:
             try:
                 cursor.fetchall()  # vaciar resultados pendientes
@@ -130,12 +109,9 @@ def login():
             cursor.close()
             connection.close()
 
-    return render_template('index.html')
+    return render_template('template/index.html')
 
 
-# ──────────────────────────────────────────────
-#  LOGOUT
-# ──────────────────────────────────────────────
 @app.route('/logout')
 def logout():
     session.clear()
@@ -143,18 +119,12 @@ def logout():
     return redirect(url_for('login'))
 
 
-# ──────────────────────────────────────────────
-#  DASHBOARD
-# ──────────────────────────────────────────────
 @app.route('/dashboard')
 @login_requerido
 def index():
-    return render_template('dashboard.html')
+    return render_template('template/dashboard.html')
 
 
-# ──────────────────────────────────────────────
-#  REGISTRAR EMPLEADO
-# ──────────────────────────────────────────────
 @app.route('/subir_empleado', methods=['GET', 'POST'])
 @login_requerido
 def subir_empleado():
@@ -172,7 +142,7 @@ def subir_empleado():
 
         if not all([nombre1, apellido1, password, rol_str, estado_str, nss_str, sueldo_str, seccion]):
             flash('Por favor, completa todos los campos obligatorios.', 'danger')
-            return render_template('subir_empleado.html')
+            return render_template('template/subir_empleado.html')
 
         try:
             rol    = int(rol_str)
@@ -181,7 +151,7 @@ def subir_empleado():
             sueldo = int(sueldo_str)
         except ValueError:
             flash('Rol, estado, NSS y sueldo deben ser valores numericos.', 'danger')
-            return render_template('subir_empleado.html')
+            return render_template('template/subir_empleado.html')
 
         fecha_ingreso_ET = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         pass_hash        = hashlib.sha256(password.encode()).hexdigest()
@@ -189,7 +159,7 @@ def subir_empleado():
         connection = get_connection()
         if connection is None:
             flash('Error de conexion con la base de datos.', 'danger')
-            return render_template('subir_empleado.html')
+            return render_template('template/subir_empleado.html')
 
         try:
             correo = generar_correo(nombre1, apellido1, connection)
@@ -208,24 +178,21 @@ def subir_empleado():
         except Exception as e:
             connection.rollback()
             flash(f'Error al registrar empleado: {str(e)}', 'danger')
-            return render_template('subir_empleado.html')
+            return render_template('template/subir_empleado.html')
         finally:
             cursor.close()
             connection.close()
 
-    return render_template('subir_empleado.html')
+    return render_template('template/subir_empleado.html')
 
 
-# ──────────────────────────────────────────────
-#  VER TABLA DE EMPLEADOS
-# ──────────────────────────────────────────────
 @app.route('/ver_tabla')
 @login_requerido
 def ver_tabla():
     connection = get_connection()
     if connection is None:
         flash('Error de conexion con la base de datos.', 'danger')
-        return render_template('ver_tabla.html', empleados=[])
+        return render_template('template/ver_tabla.html', empleados=[])
 
     try:
         cursor = dict_cursor(connection)
@@ -238,18 +205,15 @@ def ver_tabla():
             ORDER  BY empleado_id DESC
         """)
         empleados = cursor.fetchall()
-        return render_template('ver_tabla.html', empleados=empleados)
+        return render_template('template/ver_tabla.html', empleados=empleados)
     except Exception as e:
         flash(f'Error al obtener empleados: {str(e)}', 'danger')
-        return render_template('ver_tabla.html', empleados=[])
+        return render_template('template/ver_tabla.html', empleados=[])
     finally:
         cursor.close()
         connection.close()
 
 
-# ──────────────────────────────────────────────
-#  ELIMINAR EMPLEADO (soft delete)
-# ──────────────────────────────────────────────
 @app.route('/eliminar_empleado/<int:empleado_id>', methods=['POST'])
 @login_requerido
 def eliminar_empleado(empleado_id):
@@ -276,9 +240,6 @@ def eliminar_empleado(empleado_id):
     return redirect(url_for('ver_tabla'))
 
 
-# ──────────────────────────────────────────────
-#  CREAR PAQUETE
-# ──────────────────────────────────────────────
 @app.route('/crear_paquete', methods=['GET', 'POST'])
 @login_requerido
 def crear_paquete():
@@ -308,11 +269,11 @@ def crear_paquete():
             flash('Por favor, completa todos los campos obligatorios.', 'danger')
             if connection:
                 connection.close()
-            return render_template('crear_paquete.html', siguiente_id=siguiente_id)
+            return render_template('template/crear_paquete.html', siguiente_id=siguiente_id)
 
         if connection is None:
             flash('Error de conexion con la base de datos.', 'danger')
-            return render_template('crear_paquete.html', siguiente_id=siguiente_id)
+            return render_template('template/crear_paquete.html', siguiente_id=siguiente_id)
 
         try:
             cursor = connection.cursor()
@@ -328,26 +289,23 @@ def crear_paquete():
         except Exception as e:
             connection.rollback()
             flash(f'Error al crear paquete: {str(e)}', 'danger')
-            return render_template('crear_paquete.html', siguiente_id=siguiente_id)
+            return render_template('template/crear_paquete.html', siguiente_id=siguiente_id)
         finally:
             cursor.close()
             connection.close()
 
     if connection:
         connection.close()
-    return render_template('crear_paquete.html', siguiente_id=siguiente_id)
+    return render_template('template/crear_paquete.html', siguiente_id=siguiente_id)
 
 
-# ──────────────────────────────────────────────
-#  VER PAQUETES
-# ──────────────────────────────────────────────
 @app.route('/ver_paquetes')
 @login_requerido
 def ver_paquetes():
     connection = get_connection()
     if connection is None:
         flash('Error de conexion con la base de datos.', 'danger')
-        return render_template('ver_paquetes.html', paquetes=[])
+        return render_template('template/ver_paquetes.html', paquetes=[])
 
     try:
         cursor = dict_cursor(connection)
@@ -362,7 +320,7 @@ def ver_paquetes():
             ORDER  BY p.paquete_id DESC
         """)
         paquetes = cursor.fetchall()
-        return render_template('ver_paquetes.html', paquetes=paquetes)
+        return render_template('template/ver_paquetes.html', paquetes=paquetes)
     except Exception as e:
         flash(f'Error al obtener paquetes: {str(e)}', 'danger')
         return render_template('ver_paquetes.html', paquetes=[])
@@ -371,9 +329,6 @@ def ver_paquetes():
         connection.close()
 
 
-# ──────────────────────────────────────────────
-#  ELIMINAR PAQUETE (soft delete)
-# ──────────────────────────────────────────────
 @app.route('/eliminar_paquete/<int:paquete_id>', methods=['POST'])
 @login_requerido
 def eliminar_paquete(paquete_id):
@@ -400,10 +355,6 @@ def eliminar_paquete(paquete_id):
     return redirect(url_for('ver_paquetes'))
 
 
-# ──────────────────────────────────────────────
-#  ORGANIZAR ALMACEN
-#  GET /organizar_almacen?filas=4&columnas=5
-# ──────────────────────────────────────────────
 @app.route('/organizar_almacen')
 @login_requerido
 def organizar_almacen():
