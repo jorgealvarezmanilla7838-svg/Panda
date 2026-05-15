@@ -1,33 +1,12 @@
-# =============================================================
-#  algoritmo_paquetes.py
-#  Módulo de organización de almacén para LogiSys
-#
-#  Contiene:
-#    · Clase Paquete  — representa un paquete con sus datos
-#    · merge_sort()   — ordena paquetes por fecha_salida (D&C)
-#    · merge()        — función auxiliar del merge sort
-#    · calcular_distancia() — distancia Manhattan desde punto de salida
-#    · asignar_paquetes()   — algoritmo voraz de asignación de posiciones
-#    · organizar()    — función principal que integra todo el flujo
-#
-#  USO DESDE app.py:
-#    from algoritmo_paquetes import organizar
-#    resultado = organizar(filas_db, filas_almacen=4, columnas_almacen=5)
-# =============================================================
+from datetime import datetime, time as _time, timedelta
 
 
-# ─────────────────────────────────────────────
-#  CLASE Paquete
-#  Adapta los datos que vienen de la base de datos
-#  (dict con paquete_id, fecha_salida, tipo, etc.)
-#  a la estructura que necesita el algoritmo.
-# ─────────────────────────────────────────────
 class Paquete:
-    def __init__(self, paquete_id, fecha_salida, tipo):
-        self.id           = paquete_id    # INT  — clave primaria en DB
-        self.fecha_salida = fecha_salida  # date — usado para ordenar
-        self.tipo         = tipo          # str  — sección/categoría
-        self.posicion     = None          # (fila, col) asignada por el voraz
+    def __init__(self, paquete_id, fecha_salida, hora_salida, tipo):
+        self.id = paquete_id
+        self.fecha_salida = _parse_fecha_hora(fecha_salida, hora_salida)
+        self.tipo = tipo
+        self.posicion = None
 
     def __repr__(self):
         return (
@@ -38,18 +17,7 @@ class Paquete:
         )
 
 
-# ─────────────────────────────────────────────
-#  MERGE SORT  — Divide y vencerás
-#  Ordena la lista de Paquetes por fecha_salida
-#  de menor a mayor (el que sale antes, primero).
-#  No usa sort() del lenguaje.
-# ─────────────────────────────────────────────
 def merge_sort(paquetes):
-    """
-    Divide la lista a la mitad recursivamente
-    hasta tener sublistas de 1 elemento,
-    luego las fusiona en orden.
-    """
     if len(paquetes) <= 1:
         return paquetes
 
@@ -61,10 +29,6 @@ def merge_sort(paquetes):
 
 
 def merge(izquierda, derecha):
-    """
-    Fusiona dos sublistas ya ordenadas en una sola.
-    Compara fecha_salida elemento a elemento.
-    """
     resultado = []
     i = j = 0
 
@@ -76,118 +40,130 @@ def merge(izquierda, derecha):
             resultado.append(derecha[j])
             j += 1
 
-    # Agrega los elementos restantes de la sublista que no terminó
     resultado.extend(izquierda[i:])
     resultado.extend(derecha[j:])
 
     return resultado
 
-
-# ─────────────────────────────────────────────
-#  DISTANCIA MANHATTAN
-#  Usada por el algoritmo voraz para medir
-#  qué tan lejos está una celda del punto
-#  de salida del almacén (esquina 0,0).
-# ─────────────────────────────────────────────
 def calcular_distancia(celda, salida):
-    """
-    Distancia Manhattan entre dos puntos (fila, col).
-    Más eficiente que Euclidiana para grillas.
-    """
     return abs(celda[0] - salida[0]) + abs(celda[1] - salida[1])
 
+def asignar_paquetes(almacen, paquetes, puertas=None):
+    if not puertas:
+        puertas = [(0, 0)]
 
-# ─────────────────────────────────────────────
-#  ALGORITMO VORAZ — Asignación de posiciones
-#  Para cada paquete (ya ordenados por fecha),
-#  busca la celda libre más cercana al punto
-#  de salida y se la asigna.
-#  El que sale primero queda más cerca → sale más rápido.
-# ─────────────────────────────────────────────
-def asignar_paquetes(almacen, paquetes):
-    """
-    almacen  : lista 2D de listas — None = celda libre
-    paquetes : lista de Paquete, ya ordenada por merge_sort
-
-    Modifica paquete.posicion y la celda del almacén in-place.
-    Retorna la lista de paquetes con posiciones asignadas.
-    """
-    salida   = (0, 0)  # Punto de salida: esquina superior-izquierda
-    filas    = len(almacen)
+    filas = len(almacen)
     columnas = len(almacen[0])
 
     for paquete in paquetes:
-        mejor_pos       = None
+        mejor_pos = None
         mejor_distancia = float('inf')
 
-        # Recorre toda la grilla buscando la celda libre más cercana
         for i in range(filas):
             for j in range(columnas):
-                if almacen[i][j] is None:                       # celda libre
-                    distancia = calcular_distancia((i, j), salida)
-                    if distancia < mejor_distancia:
-                        mejor_distancia = distancia
-                        mejor_pos       = (i, j)
+                if almacen[i][j] is None:
+                    dist_puerta = min(abs(i - p[0]) + abs(j - p[1]) for p in puertas)
+                    if dist_puerta < mejor_distancia:
+                        mejor_distancia = dist_puerta
+                        mejor_pos = (i, j)
 
-        # Si encontró una celda, asigna el paquete
         if mejor_pos is not None:
-            fila, col          = mejor_pos
+            fila, col = mejor_pos
             almacen[fila][col] = paquete
-            paquete.posicion   = mejor_pos
+            paquete.posicion = mejor_pos
 
     return paquetes
 
 
-# ─────────────────────────────────────────────
-#  FUNCIÓN PRINCIPAL — organizar()
-#  Punto de entrada que usa app.py.
-#  Recibe las filas crudas de la DB y devuelve
-#  una lista de dicts listos para JSON / DB.
-# ─────────────────────────────────────────────
-def organizar(filas_db, filas_almacen=4, columnas_almacen=5):
-    """
-    Parámetros:
-      filas_db         : list[dict] con claves paquete_id, fecha_salida, tipo
-      filas_almacen    : alto de la grilla del almacén  (default 4)
-      columnas_almacen : ancho de la grilla del almacén (default 5)
+def _parse_fecha_hora(fecha, hora):
+    if fecha is None:
+        fecha_dt = datetime.now()
+    else:
+        if isinstance(fecha, str):
+            try:
+                fecha_dt = datetime.fromisoformat(fecha)
+            except Exception:
+                # Fecha sin hora
+                fecha_dt = datetime.fromisoformat(fecha + 'T00:00:00')
+        elif hasattr(fecha, 'year'):
+            # date or datetime
+            if hasattr(fecha, 'hour'):
+                fecha_dt = datetime(fecha.year, fecha.month, fecha.day, fecha.hour, getattr(fecha, 'minute', 0))
+            else:
+                fecha_dt = datetime(fecha.year, fecha.month, fecha.day)
+        else:
+            fecha_dt = datetime.now()
 
-    Retorna:
-      list[dict] con claves:
-        paquete_id, tipo, fecha_salida, posicion_fila, posicion_col, orden
-    """
-    # 1. Convertir filas de DB → objetos Paquete
-    paquetes = [
-        Paquete(
-            paquete_id  = fila['paquete_id'],
-            fecha_salida = fila['fecha_salida'],
-            tipo        = fila['tipo']
-        )
-        for fila in filas_db
-    ]
+    if hora is None:
+        return fecha_dt
 
-    # 2. Ordenar por fecha_salida con Merge Sort (sin sort())
+    if isinstance(hora, str):
+        try:
+            t = _time.fromisoformat(hora)
+            return datetime(fecha_dt.year, fecha_dt.month, fecha_dt.day, t.hour, t.minute, t.second)
+        except Exception:
+            return fecha_dt
+
+    if isinstance(hora, timedelta):
+        total_seconds = int(hora.total_seconds())
+        h = total_seconds // 3600
+        m = (total_seconds % 3600) // 60
+        return datetime(fecha_dt.year, fecha_dt.month, fecha_dt.day, h % 24, m)
+
+    if hasattr(hora, 'hour'):
+        return datetime(fecha_dt.year, fecha_dt.month, fecha_dt.day, hora.hour, getattr(hora, 'minute', 0))
+
+    return fecha_dt
+
+
+def organizar(filas_db, filas_almacen=4, columnas_almacen=5, puertas=None, puerta_activa=None):
+    paquetes = []
+    for fila in filas_db:
+        paquetes.append(Paquete(
+            paquete_id = fila.get('paquete_id'),
+            fecha_salida = fila.get('fecha_salida'),
+            hora_salida = fila.get('hora_salida') if 'hora_salida' in fila else None,
+            tipo = fila.get('tipo')
+        ))
+
     paquetes_ordenados = merge_sort(paquetes)
 
-    # 3. Crear grilla vacía del almacén
     almacen = [[None] * columnas_almacen for _ in range(filas_almacen)]
 
-    # 4. Asignar posiciones con algoritmo voraz
-    asignar_paquetes(almacen, paquetes_ordenados)
+    puertas_t = []
+    if puerta_activa:
+        try:
+            if isinstance(puerta_activa, dict):
+                puertas_t = [(int(puerta_activa.get('f')), int(puerta_activa.get('c')))]
+            else:
+                puertas_t = [(int(puerta_activa[0]), int(puerta_activa[1]))]
+        except Exception:
+            puertas_t = []
+    else:
+        if puertas:
+            for p in puertas:
+                try:
+                    if isinstance(p, dict):
+                        puertas_t.append((int(p['f']), int(p['c'])))
+                    else:
+                        puertas_t.append((int(p[0]), int(p[1])))
+                except Exception:
+                    pass
 
-    # 5. Construir resultado serializable para JSON y para guardar en DB
+    asignar_paquetes(almacen, paquetes_ordenados, puertas=puertas_t)
+
     resultado = []
     for orden, paquete in enumerate(paquetes_ordenados, start=1):
         fila_pos = paquete.posicion[0] if paquete.posicion else None
-        col_pos  = paquete.posicion[1] if paquete.posicion else None
+        col_pos = paquete.posicion[1] if paquete.posicion else None
         resultado.append({
-            'paquete_id'    : paquete.id,
-            'tipo'          : paquete.tipo,
-            'fecha_salida'  : str(paquete.fecha_salida),
-            'orden'         : orden,           # 1 = sale primero
-            'posicion_fila' : fila_pos,
-            'posicion_col'  : col_pos,
-            # Etiqueta legible, ej. "F1-C3"
-            'posicion_label': f"F{fila_pos + 1}-C{col_pos + 1}" if paquete.posicion else "Sin espacio",
+            'paquete_id': paquete.id,
+            'tipo': paquete.tipo,
+            'fecha_salida': paquete.fecha_salida.isoformat() if hasattr(paquete.fecha_salida, 'isoformat') else str(paquete.fecha_salida),
+            'orden': orden,
+            'posicion_fila': fila_pos,
+            'posicion_col': col_pos,
+            'posicion_label': (f"F{fila_pos + 1}-C{col_pos + 1}" if paquete.posicion else "Sin espacio"),
         })
 
     return resultado

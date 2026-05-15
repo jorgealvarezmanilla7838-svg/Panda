@@ -2,13 +2,12 @@ import mysql.connector
 from mysql.connector import Error
 
 def get_connection():
-    """Crea y retorna una conexión a la base de datos MySQL."""
     try:
         connection = mysql.connector.connect(
             host='localhost',
             port=3306,
-            user='root',       # Usuario por defecto en XAMPP
-            password='',       # Contraseña por defecto en XAMPP (vacía)
+            user='root',       
+            password='',       
             database='pandas'
         )
         if connection.is_connected():

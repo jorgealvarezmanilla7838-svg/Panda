@@ -58,7 +58,6 @@ def login_requerido(f):
         return f(*args, **kwargs)
     return decorated
 
-
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -213,7 +212,6 @@ def ver_tabla():
         cursor.close()
         connection.close()
 
-
 @app.route('/eliminar_empleado/<int:empleado_id>', methods=['POST'])
 @login_requerido
 def eliminar_empleado(empleado_id):
@@ -319,7 +317,19 @@ def ver_paquetes():
             WHERE  p.eliminado = 0
             ORDER  BY p.paquete_id DESC
         """)
-        paquetes = cursor.fetchall()
+        paquetes_raw = cursor.fetchall()
+
+        import datetime
+        paquetes = []
+        for p in paquetes_raw:
+            p = dict(p)
+            if isinstance(p.get('hora_salida'), datetime.timedelta):
+                total_segundos = int(p['hora_salida'].total_seconds())
+                horas   = total_segundos // 3600
+                minutos = (total_segundos % 3600) // 60
+                p['hora_salida'] = datetime.time(horas % 24, minutos)
+            paquetes.append(p)
+
         return render_template('template/ver_paquetes.html', paquetes=paquetes)
     except Exception as e:
         flash(f'Error al obtener paquetes: {str(e)}', 'danger')
@@ -358,8 +368,24 @@ def eliminar_paquete(paquete_id):
 @app.route('/organizar_almacen')
 @login_requerido
 def organizar_almacen():
+    import json as _json
     filas_almacen    = int(request.args.get('filas',    4))
     columnas_almacen = int(request.args.get('columnas', 5))
+    puertas_raw = request.args.get('puertas', None)
+    if puertas_raw is not None:
+        try:
+            puertas = _json.loads(puertas_raw)
+        except Exception:
+            puertas = []
+    else:
+        # Si no se pasaron puertas en el query, usar las guardadas en sesión
+        puertas = session.get('almacen_puertas', [])
+
+    session['almacen_filas']    = filas_almacen
+    session['almacen_columnas'] = columnas_almacen
+    session['almacen_puertas']  = puertas
+
+
 
     connection = get_connection()
     if connection is None:
@@ -368,7 +394,7 @@ def organizar_almacen():
     try:
         cursor = dict_cursor(connection)
         cursor.execute("""
-            SELECT paquete_id, fecha_salida, tipo
+            SELECT paquete_id, fecha_salida, hora_salida, tipo
             FROM   paquetes
             WHERE  eliminado = 0
             ORDER  BY paquete_id ASC
@@ -378,7 +404,7 @@ def organizar_almacen():
         if not filas_db:
             return jsonify({'resultado': [], 'mensaje': 'No hay paquetes activos'})
 
-        resultado = organizar(filas_db, filas_almacen, columnas_almacen)
+        resultado = organizar(filas_db, filas_almacen, columnas_almacen, puertas)
 
         for item in resultado:
             cursor.execute("""
@@ -398,9 +424,136 @@ def organizar_almacen():
         return jsonify({
             'filas'    : filas_almacen,
             'columnas' : columnas_almacen,
+            'puertas'  : puertas,
             'resultado': resultado
         })
 
+    except Exception as e:
+        connection.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        cursor.close()
+        connection.close()
+
+
+
+@app.route('/almacen')
+@login_requerido
+def almacen():
+    return render_template('template/almacen.html')
+
+
+@app.route('/api/almacen')
+@login_requerido
+def api_almacen():
+    import datetime as dt
+    FILAS    = session.get('almacen_filas', 4)
+    COLUMNAS = session.get('almacen_columnas', 5)
+    PUERTAS  = session.get('almacen_puertas', [])
+    connection = get_connection()
+    if connection is None:
+        return jsonify({'error': 'Sin conexion'}), 500
+
+    try:
+        cursor = dict_cursor(connection)
+        cursor.execute("""
+            SELECT paquete_id, tipo, estado, fecha_salida,
+                   posicion_fila, posicion_col, orden_salida, descripcion
+            FROM   paquetes
+            WHERE  eliminado = 0
+              AND  posicion_fila IS NOT NULL
+              AND  posicion_col  IS NOT NULL
+        """)
+        paquetes = cursor.fetchall()
+
+        grilla = [[None] * COLUMNAS for _ in range(FILAS)]
+
+        for p in paquetes:
+            f = p['posicion_fila']
+            c = p['posicion_col']
+            if 0 <= f < FILAS and 0 <= c < COLUMNAS:
+                grilla[f][c] = {
+                    'id'          : p['paquete_id'],
+                    'tipo'        : p['tipo'],
+                    'estado'      : p['estado'],
+                    'fecha_salida': str(p['fecha_salida']),
+                    'orden'       : p['orden_salida'],
+                    'descripcion' : p['descripcion'] or '',
+                }
+
+        cursor.execute("""
+            SELECT paquete_id, tipo, estado, fecha_salida, descripcion
+            FROM   paquetes
+            WHERE  eliminado = 0
+              AND  (posicion_fila IS NULL OR posicion_col IS NULL)
+            ORDER  BY paquete_id ASC
+        """)
+        sin_posicion = []
+        for p in cursor.fetchall():
+            sin_posicion.append({
+                'id'          : p['paquete_id'],
+                'tipo'        : p['tipo'],
+                'estado'      : p['estado'],
+                'fecha_salida': str(p['fecha_salida']),
+                'descripcion' : p['descripcion'] or '',
+            })
+
+        return jsonify({
+            'filas'        : FILAS,
+            'columnas'     : COLUMNAS,
+            'puertas'      : PUERTAS,
+            'grilla'       : grilla,
+            'sin_posicion' : sin_posicion,
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.route('/api/puertas', methods=['POST'])
+@login_requerido
+def api_puertas():
+    import json as _json
+    data = request.get_json(force=True, silent=True) or {}
+    puertas = data.get('puertas', [])
+    session['almacen_puertas'] = puertas
+    return jsonify({'ok': True, 'puertas': puertas})
+
+
+@app.route('/api/mover_paquete', methods=['POST'])
+@login_requerido
+def api_mover_paquete():
+    paquete_id = request.form.get('paquete_id', type=int)
+    nueva_fila = request.form.get('nueva_fila', type=int)
+    nueva_col  = request.form.get('nueva_col',  type=int)
+    swap_id    = request.form.get('swap_id',    type=int)
+    swap_fila  = request.form.get('swap_fila',  type=int)
+    swap_col   = request.form.get('swap_col',   type=int)
+
+    if paquete_id is None or nueva_fila is None or nueva_col is None:
+        return jsonify({'error': 'Datos incompletos'}), 400
+
+    connection = get_connection()
+    if connection is None:
+        return jsonify({'error': 'Sin conexion a la base de datos'}), 500
+
+    try:
+        cursor = connection.cursor()
+        cursor.execute("""
+            UPDATE paquetes SET posicion_fila=%s, posicion_col=%s
+            WHERE paquete_id=%s
+        """, (nueva_fila, nueva_col, paquete_id))
+
+        if swap_id is not None and swap_fila is not None and swap_col is not None:
+            cursor.execute("""
+                UPDATE paquetes SET posicion_fila=%s, posicion_col=%s
+                WHERE paquete_id=%s
+            """, (swap_fila, swap_col, swap_id))
+
+        connection.commit()
+        return jsonify({'ok': True})
     except Exception as e:
         connection.rollback()
         return jsonify({'error': str(e)}), 500
