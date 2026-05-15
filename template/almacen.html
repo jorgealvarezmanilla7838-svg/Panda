@@ -12,7 +12,7 @@
 <body>
 
 <nav class="navbar-logis d-flex align-items-center">
-  <a href="{{ url_for('index') }}" class="brand">LOGI<span>SYS</span></a>
+  <a href="{{ url_for('index') }}" class="brand">PAN<span>DAS</span></a>
   <span class="nav-tag">Almacén Visual</span>
   <div class="ms-auto d-flex align-items-center gap-3">
     <span style="font-size:0.78rem;color:var(--texto-sec);">
@@ -27,6 +27,15 @@
   </div>
 </nav>
 
+<div id="ctx-menu" class="ctx-menu">
+  <button id="ctx-asignar" class="ctx-item ctx-puerta" onclick="ctxAsignarPuerta()">
+    <i class="bi bi-door-open me-2"></i>Asignar como puerta
+  </button>
+  <button id="ctx-eliminar" class="ctx-item ctx-eliminar" onclick="ctxEliminarPuerta()">
+    <i class="bi bi-x-circle me-2"></i>Eliminar como puerta
+  </button>
+</div>
+
 <div class="page">
 
   <div class="page-eyebrow">Sistema de almacén</div>
@@ -39,8 +48,14 @@
       <div class="panel">
         <div class="panel-stripe"></div>
         <div class="panel-header">
-          <span class="panel-title"><i class="bi bi-grid-3x3 me-2"></i>Mapa del almacén  <span id="lbl-grilla" style="color:var(--texto-sec);font-size:0.75rem;font-weight:400;margin-left:0.5rem;">4 × 5</span></span>
-          <div class="d-flex gap-2">
+          <span class="panel-title">
+            <i class="bi bi-grid-3x3 me-2"></i>Mapa del almacén
+            <span id="lbl-grilla" style="color:var(--texto-sec);font-size:0.75rem;font-weight:400;margin-left:0.5rem;">4 × 5</span>
+          </span>
+          <div class="d-flex gap-2 align-items-center">
+            <span style="font-size:0.62rem;color:var(--texto-sec);letter-spacing:0.1em;">
+              <i class="bi bi-mouse2 me-1"></i>Clic derecho para puertas · Arrastra para mover
+            </span>
             <button class="btn-nav" id="btn-recargar" onclick="cargarAlmacen()">
               <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
             </button>
@@ -51,11 +66,6 @@
         </div>
 
         <div class="almacen-wrap">
-          <div class="entrada-label">
-            <div class="entrada-dot"></div>
-            Entrada / Salida (F1-C1)
-          </div>
-
           <div class="grid-col-headers" id="col-headers"></div>
 
           <div id="grilla-almacen">
@@ -74,8 +84,10 @@
           <div class="leyenda-item"><div class="leyenda-dot" style="background:var(--amarillo)"></div>Herramientas</div>
           <div class="leyenda-item"><div class="leyenda-dot" style="background:var(--cyan)"></div>Farmacia</div>
           <div class="leyenda-item"><div class="leyenda-dot" style="background:var(--rojo)"></div>Juguetes</div>
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:var(--verde);opacity:0.5;border:1px solid var(--verde)"></div>Puerta</div>
           <div class="leyenda-item"><div class="leyenda-dot" style="background:var(--gris-borde)"></div>Vacío</div>
         </div>
+
       </div>
 
       <div class="panel mt-3" id="panel-sin-pos" style="display:none;">
@@ -97,6 +109,31 @@
     </div>
 
     <div class="right-col">
+
+      <div class="panel">
+        <div class="panel-stripe" style="background:linear-gradient(90deg,var(--amarillo),#D4A800);"></div>
+        <div class="panel-header">
+          <span class="panel-title"><i class="bi bi-sliders me-2"></i>Configurar almacén</span>
+          <button class="btn-nav" id="btn-aplicar-config" onclick="aplicarConfigAlmacen()" style="color:var(--amarillo);border-color:rgba(245,196,0,0.4);">
+            <i class="bi bi-check-lg me-1"></i>Aplicar
+          </button>
+        </div>
+        <div class="panel-body">
+          <div class="mb-3">
+            <label class="form-label-logis">Filas <span id="cfg-filas-val" style="color:var(--amarillo);">4</span></label>
+            <input type="range" id="cfg-filas" class="range-logis" min="2" max="7" value="4" oninput="document.getElementById('cfg-filas-val').textContent=this.value"/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label-logis">Columnas <span id="cfg-cols-val" style="color:var(--amarillo);">5</span></label>
+            <input type="range" id="cfg-cols" class="range-logis" min="2" max="7" value="5" oninput="document.getElementById('cfg-cols-val').textContent=this.value"/>
+          </div>
+          <p style="font-size:0.7rem;color:var(--texto-sec);margin-top:0.5rem;">
+            <i class="bi bi-door-open me-1" style="color:var(--verde);"></i>
+            Haz <strong style="color:var(--blanco);">clic derecho</strong> en cualquier celda del mapa para asignarla o quitarla como puerta.
+          </p>
+          <div class="msg" id="msg-config"></div>
+        </div>
+      </div>
 
       <div class="panel">
         <div class="panel-stripe"></div>
