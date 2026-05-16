@@ -311,6 +311,9 @@ function mostrarRuta(destFila, destCol, pkg) {
     else                                 cel.classList.add('ruta-paso');
   });
 
+  // ── Dibujar línea SVG sobre la grilla ─────────────────────
+  dibujarSVGRuta(pasos, pkg);
+
   const panel = document.getElementById('ruta-panel');
   panel.style.display = '';
 
@@ -372,6 +375,9 @@ function limpiarResaltadoRuta() {
   document.querySelectorAll('.celda.ruta-paso, .celda.ruta-destino, .celda.entrada').forEach(el => {
     el.classList.remove('ruta-paso', 'ruta-destino', 'entrada');
   });
+  // Limpiar también el SVG
+  const svg = document.getElementById('svg-ruta');
+  if (svg) svg.innerHTML = '';
 }
 
 function limpiarRuta() {
@@ -548,4 +554,433 @@ function mostrarMsg(el, tipo, texto) {
 function ocultarMsg(el) {
   if (typeof el === 'string') el = document.getElementById(el);
   if (el) el.style.display = 'none';
+}
+
+// ══════════════════════════════════════════════
+//  DIBUJAR LÍNEA SVG SOBRE LA GRILLA
+//  Mide la posición real de cada celda en pantalla
+//  y traza una polilínea animada que une los centros.
+// ══════════════════════════════════════════════
+function dibujarSVGRuta(pasos, pkg) {
+  const svg     = document.getElementById('svg-ruta');
+  const wrapper = document.getElementById('grilla-wrapper');
+  if (!svg || !wrapper) return;
+  svg.innerHTML = '';   // limpiar trazo anterior
+
+  if (pasos.length < 2) return;
+
+  const wRect = wrapper.getBoundingClientRect();
+
+  // Obtener centro de cada celda relativo al wrapper
+  const puntos = pasos.map(paso => {
+    const cel = getCelda(paso.f, paso.c);
+    if (!cel) return null;
+    const r = cel.getBoundingClientRect();
+    return {
+      x: r.left + r.width  / 2 - wRect.left,
+      y: r.top  + r.height / 2 - wRect.top,
+    };
+  }).filter(Boolean);
+
+  if (puntos.length < 2) return;
+
+  const pts = puntos.map(p => `${p.x},${p.y}`).join(' ');
+
+  // ── Polilínea de sombra (negra semitransparente) ──────────
+  const sombra = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+  sombra.setAttribute('points', pts);
+  sombra.setAttribute('fill',         'none');
+  sombra.setAttribute('stroke',       'rgba(0,0,0,0.55)');
+  sombra.setAttribute('stroke-width', '7');
+  sombra.setAttribute('stroke-linecap',  'round');
+  sombra.setAttribute('stroke-linejoin', 'round');
+  svg.appendChild(sombra);
+
+  // ── Polilínea principal animada ───────────────────────────
+  const linea = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+  linea.setAttribute('points', pts);
+  linea.setAttribute('class',  'ruta-linea');
+  svg.appendChild(linea);
+
+  // ── Puntos intermedios ────────────────────────────────────
+  puntos.slice(1, -1).forEach(p => {
+    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    c.setAttribute('cx', p.x); c.setAttribute('cy', p.y); c.setAttribute('r', '4');
+    c.setAttribute('class', 'ruta-dot-mid');
+    svg.appendChild(c);
+  });
+
+  // ── Punto de inicio (verde) ───────────────────────────────
+  const ini = puntos[0];
+  const dotIni = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  dotIni.setAttribute('cx', ini.x); dotIni.setAttribute('cy', ini.y); dotIni.setAttribute('r', '7');
+  dotIni.setAttribute('class', 'ruta-dot-inicio');
+  svg.appendChild(dotIni);
+
+  // ── Punto de destino (amarillo) ───────────────────────────
+  const fin = puntos[puntos.length - 1];
+  const dotFin = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  dotFin.setAttribute('cx', fin.x); dotFin.setAttribute('cy', fin.y); dotFin.setAttribute('r', '8');
+  dotFin.setAttribute('class', 'ruta-dot-fin');
+  svg.appendChild(dotFin);
+
+  // ── Etiqueta de distancia en el punto medio ───────────────
+  const mid   = puntos[Math.floor(puntos.length / 2)];
+  const dist  = pasos.length - 1;
+  const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  label.setAttribute('x', mid.x + 10);
+  label.setAttribute('y', mid.y - 10);
+  label.setAttribute('class', 'ruta-label');
+  label.textContent = `${dist} paso${dist !== 1 ? 's' : ''}`;
+  svg.appendChild(label);
+}
+
+// Calcula pasos intermedios entre dos celdas (usado por SVG)
+function calcularPasosTramo(fi, ci, fd, cd) {
+  const pasos = [{f: fi, c: ci}];
+  let f = fi, c = ci;
+  while (f !== fd) { f += f < fd ? 1 : -1; pasos.push({f, c}); }
+  while (c !== cd) { c += c < cd ? 1 : -1; pasos.push({f, c}); }
+  return pasos;
+}
+
+// ══════════════════════════════════════════════
+//  MULTI-RUTA — ESTADO Y CONSTANTES
+// ══════════════════════════════════════════════
+ESTADO.modoMulti      = false;
+ESTADO.multiSeleccion = []; // [{fila, col, pkg}, ...]
+
+const COLORES_TRAMO = ['#F5C400','#22D3EE','#C084FC','#4ADE80','#FB923C','#F87171','#60A5FA'];
+
+
+// ══════════════════════════════════════════════
+//  PARCHEAR seleccionarCelda para soporte multi
+// ══════════════════════════════════════════════
+const _selCelda_orig = seleccionarCelda;
+seleccionarCelda = function(fila, col, pkg) {
+  if (ESTADO.modoMulti) {
+    toggleSeleccionMulti(fila, col, pkg);
+    return;
+  }
+  _selCelda_orig(fila, col, pkg);
+};
+
+
+// ══════════════════════════════════════════════
+//  TOGGLE MODO MULTI-RUTA
+// ══════════════════════════════════════════════
+function toggleModoMulti() {
+  ESTADO.modoMulti = !ESTADO.modoMulti;
+  const btn = document.getElementById('btn-multi');
+
+  if (ESTADO.modoMulti) {
+    btn.classList.add('activo');
+    btn.innerHTML = '<i class="bi bi-collection-fill me-1"></i>Multi-ruta ON';
+    document.body.classList.add('modo-multi');
+    limpiarRuta();
+    document.getElementById('barra-flotante').classList.add('visible');
+    document.getElementById('panel-multi').style.display = '';
+    document.getElementById('multi-distancia-total').style.display = 'none';
+    document.getElementById('multi-destinos-list').innerHTML = '';
+    _actualizarUI();
+  } else {
+    limpiarMultiRuta();
+  }
+}
+
+
+// ══════════════════════════════════════════════
+//  AGREGAR / QUITAR PAQUETE DE SELECCIÓN
+// ══════════════════════════════════════════════
+function toggleSeleccionMulti(fila, col, pkg) {
+  const idx = ESTADO.multiSeleccion.findIndex(s => s.pkg.id === pkg.id);
+  const cel = getCelda(fila, col);
+
+  if (idx === -1) {
+    ESTADO.multiSeleccion.push({ fila, col, pkg });
+    cel.classList.add('seleccionada-multi');
+  } else {
+    ESTADO.multiSeleccion.splice(idx, 1);
+    cel.classList.remove('seleccionada-multi');
+  }
+
+  // Redibujar badges numéricos en celdas
+  document.querySelectorAll('.badge-multi').forEach(b => b.remove());
+  ESTADO.multiSeleccion.forEach((s, i) => {
+    const c = getCelda(s.fila, s.col);
+    if (!c) return;
+    const badge = document.createElement('div');
+    badge.className   = 'badge-multi';
+    badge.textContent = i + 1;
+    c.appendChild(badge);
+  });
+
+  _actualizarUI();
+
+  // ── Calcular ruta automáticamente si hay 2 o más paquetes ──
+  if (ESTADO.multiSeleccion.length >= 2) {
+    calcularMultiRuta();
+  } else {
+    // Con 0 o 1 paquete limpiar el SVG y el panel de resultados
+    limpiarResaltadoRuta();
+    // Volver a marcar el único seleccionado si queda uno
+    ESTADO.multiSeleccion.forEach(s => {
+      const c = getCelda(s.fila, s.col);
+      if (c) c.classList.add('seleccionada-multi');
+    });
+    document.getElementById('multi-distancia-total').style.display = 'none';
+    document.getElementById('multi-destinos-list').innerHTML = '';
+  }
+}
+
+
+// ── Actualiza barra flotante y texto del panel ──
+function _actualizarUI() {
+  const n     = ESTADO.multiSeleccion.length;
+  const chips = document.getElementById('barra-chips');
+  const info  = document.getElementById('barra-info');
+  const hdr   = document.getElementById('multi-header-txt');
+
+  // Chips en barra flotante
+  if (chips) {
+    chips.innerHTML = n === 0
+      ? '<span style="font-size:0.78rem;color:#888;">Haz clic en los paquetes que quieres recoger...</span>'
+      : ESTADO.multiSeleccion.map((s, i) => {
+          const color = COLORES_TRAMO[i % COLORES_TRAMO.length];
+          return `<span class="barra-chip" style="color:${color};border-color:${color}55;background:${color}11;">
+            ${i+1}. P${String(s.pkg.id).padStart(3,'0')}
+          </span>`;
+        }).join('');
+  }
+  if (info) info.innerHTML = `<strong>${n}</strong> seleccionado${n!==1?'s':''}`;
+
+  // Texto en panel lateral
+  if (hdr) hdr.innerHTML = n === 0
+    ? 'Haz clic en los paquetes de la grilla para seleccionarlos.'
+    : `<span style="color:var(--cyan);font-weight:700;">${n} paquete${n>1?'s':''} seleccionado${n>1?'s':''}.</span>
+       Presiona <strong style="color:var(--cyan);">Calcular</strong> cuando termines.`;
+}
+
+
+// ══════════════════════════════════════════════
+//  ALGORITMO NEAREST NEIGHBOR (vecino más cercano)
+//  Parte de la puerta más cercana al conjunto
+// ══════════════════════════════════════════════
+function nearestNeighbor(destinos) {
+  // Elegir la mejor puerta como punto de inicio
+  let puertas = ESTADO.puertas;
+  if (!puertas || puertas.length === 0) puertas = [{ f: 0, c: 0 }];
+
+  // Puerta con menor suma de distancias a todos los destinos
+  let puertaInicio = puertas[0];
+  let menorSuma    = Infinity;
+  for (const p of puertas) {
+    const suma = destinos.reduce((s, d) =>
+      s + Math.abs(p.f - d.fila) + Math.abs(p.c - d.col), 0);
+    if (suma < menorSuma) { menorSuma = suma; puertaInicio = p; }
+  }
+
+  const visitados = new Array(destinos.length).fill(false);
+  const orden     = [];
+  let posActual   = { f: puertaInicio.f, c: puertaInicio.c };
+
+  for (let paso = 0; paso < destinos.length; paso++) {
+    let mejorIdx = -1, mejorDist = Infinity;
+    destinos.forEach((d, i) => {
+      if (visitados[i]) return;
+      const dist = Math.abs(d.fila - posActual.f) + Math.abs(d.col - posActual.c);
+      if (dist < mejorDist) { mejorDist = dist; mejorIdx = i; }
+    });
+    visitados[mejorIdx] = true;
+    orden.push({ ...destinos[mejorIdx], distDesdeAnterior: mejorDist });
+    posActual = { f: destinos[mejorIdx].fila, c: destinos[mejorIdx].col };
+  }
+
+  return { orden, puertaInicio };
+}
+
+
+// ══════════════════════════════════════════════
+//  CALCULAR Y MOSTRAR MULTI-RUTA
+// ══════════════════════════════════════════════
+function calcularMultiRuta() {
+  const sel = ESTADO.multiSeleccion;
+  if (sel.length < 2) {
+    alert('Selecciona al menos 2 paquetes en la grilla.');
+    return;
+  }
+
+  const { orden: ordenOptimo, puertaInicio } = nearestNeighbor(sel);
+
+  // Paradas: puerta → P1 → P2 → ... → Pn
+  const paradas = [
+    { f: puertaInicio.f, c: puertaInicio.c, pkg: null },
+    ...ordenOptimo.map(o => ({ f: o.fila, c: o.col, pkg: o.pkg }))
+  ];
+
+  // Distancia total
+  let distTotal = 0;
+  paradas.forEach((p, i) => {
+    if (i === 0) return;
+    distTotal += Math.abs(p.f - paradas[i-1].f) + Math.abs(p.c - paradas[i-1].c);
+  });
+
+  // Limpiar y dibujar
+  limpiarResaltadoRuta();
+  dibujarSVGMulti(paradas);
+
+  // Resaltar celdas destino
+  ordenOptimo.forEach(o => {
+    const cel = getCelda(o.fila, o.col);
+    if (cel) cel.classList.add('ruta-destino');
+  });
+
+  // Actualizar panel
+  const totalEl = document.getElementById('multi-distancia-total');
+  totalEl.style.display = '';
+  totalEl.innerHTML =
+    `<i class="bi bi-signpost-split me-1"></i>` +
+    `Distancia total: <strong>${distTotal}</strong> paso${distTotal!==1?'s':''} &nbsp;·&nbsp; ` +
+    `${sel.length} paquetes · Puerta F${puertaInicio.f+1}-C${puertaInicio.c+1}`;
+
+  document.getElementById('multi-destinos-list').innerHTML =
+    ordenOptimo.map((o, i) => `
+      <div class="multi-destino-item">
+        <div class="multi-orden-badge"
+             style="background:${COLORES_TRAMO[i%COLORES_TRAMO.length]}22;
+                    color:${COLORES_TRAMO[i%COLORES_TRAMO.length]};
+                    border:1px solid ${COLORES_TRAMO[i%COLORES_TRAMO.length]}55;">${i+1}</div>
+        <div style="flex:1;">
+          <span style="font-family:'Share Tech Mono',monospace;font-size:0.85rem;">
+            P${String(o.pkg.id).padStart(3,'0')}
+          </span>
+          <span style="color:#888;font-size:0.75rem;margin-left:0.4rem;">${o.pkg.tipo}</span>
+        </div>
+        <span style="font-size:0.72rem;color:#888;">F${o.fila+1}-C${o.col+1}</span>
+        <span style="font-size:0.7rem;color:#888;margin-left:0.3rem;">+${o.distDesdeAnterior}p</span>
+      </div>`
+    ).join('');
+}
+
+
+// ══════════════════════════════════════════════
+//  DIBUJAR SVG MULTI-TRAMO
+//  Cada tramo tiene su propio color y número de orden
+// ══════════════════════════════════════════════
+function dibujarSVGMulti(paradas) {
+  const svg     = document.getElementById('svg-ruta');
+  const wrapper = document.getElementById('grilla-wrapper');
+  if (!svg || !wrapper) return;
+  svg.innerHTML = '';
+
+  const wRect = wrapper.getBoundingClientRect();
+
+  paradas.forEach((parada, i) => {
+    if (i === 0) return; // el tramo va de i-1 → i
+    const prev  = paradas[i-1];
+    const color = COLORES_TRAMO[(i-1) % COLORES_TRAMO.length];
+
+    // Pasos del tramo
+    const pasosTramo = calcularPasosTramo(prev.f, prev.c, parada.f, parada.c);
+    const puntos = pasosTramo.map(p => {
+      const cel = getCelda(p.f, p.c);
+      if (!cel) return null;
+      const r = cel.getBoundingClientRect();
+      return { x: r.left + r.width/2 - wRect.left, y: r.top + r.height/2 - wRect.top };
+    }).filter(Boolean);
+
+    if (puntos.length < 2) return;
+    const pts = puntos.map(p => `${p.x},${p.y}`).join(' ');
+
+    // Sombra
+    const sombra = document.createElementNS('http://www.w3.org/2000/svg','polyline');
+    sombra.setAttribute('points', pts);
+    sombra.setAttribute('fill','none');
+    sombra.setAttribute('stroke','rgba(0,0,0,0.5)');
+    sombra.setAttribute('stroke-width','7');
+    sombra.setAttribute('stroke-linecap','round');
+    sombra.setAttribute('stroke-linejoin','round');
+    svg.appendChild(sombra);
+
+    // Línea del tramo
+    const linea = document.createElementNS('http://www.w3.org/2000/svg','polyline');
+    linea.setAttribute('points', pts);
+    linea.setAttribute('fill','none');
+    linea.setAttribute('stroke', color);
+    linea.setAttribute('stroke-width','3');
+    linea.setAttribute('stroke-linecap','round');
+    linea.setAttribute('stroke-linejoin','round');
+    linea.setAttribute('stroke-dasharray','8 5');
+    linea.style.animation = `marcha ${0.4 + (i-1)*0.07}s linear infinite`;
+    linea.style.filter    = `drop-shadow(0 0 4px ${color}aa)`;
+    svg.appendChild(linea);
+
+    // Badge numérico sobre el destino del tramo
+    const fin = puntos[puntos.length - 1];
+
+    const circulo = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    circulo.setAttribute('cx', fin.x);
+    circulo.setAttribute('cy', fin.y - 20);
+    circulo.setAttribute('r','9');
+    circulo.setAttribute('fill', color);
+    circulo.setAttribute('opacity','0.92');
+    svg.appendChild(circulo);
+
+    const numTxt = document.createElementNS('http://www.w3.org/2000/svg','text');
+    numTxt.setAttribute('x', fin.x);
+    numTxt.setAttribute('y', fin.y - 15);
+    numTxt.setAttribute('text-anchor','middle');
+    numTxt.setAttribute('font-family','Share Tech Mono, monospace');
+    numTxt.setAttribute('font-size','10');
+    numTxt.setAttribute('font-weight','700');
+    numTxt.setAttribute('fill','#000');
+    numTxt.textContent = i;
+    svg.appendChild(numTxt);
+  });
+
+  // Punto de inicio en la puerta (verde pulsante)
+  const cel0 = getCelda(paradas[0].f, paradas[0].c);
+  if (cel0) {
+    const r0   = cel0.getBoundingClientRect();
+    const iniX = r0.left + r0.width/2  - wRect.left;
+    const iniY = r0.top  + r0.height/2 - wRect.top;
+    const dot  = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('cx', iniX);
+    dot.setAttribute('cy', iniY);
+    dot.setAttribute('r','8');
+    dot.setAttribute('class','ruta-dot-inicio');
+    svg.appendChild(dot);
+  }
+}
+
+
+// ══════════════════════════════════════════════
+//  LIMPIAR MULTI-RUTA
+// ══════════════════════════════════════════════
+function limpiarMultiRuta() {
+  // Quitar clases y badges de celdas
+  ESTADO.multiSeleccion.forEach(s => {
+    const cel = getCelda(s.fila, s.col);
+    if (cel) {
+      cel.classList.remove('seleccionada-multi','ruta-destino');
+      cel.querySelectorAll('.badge-multi').forEach(b => b.remove());
+    }
+  });
+  ESTADO.multiSeleccion = [];
+  limpiarResaltadoRuta();
+
+  // Ocultar elementos UI
+  document.getElementById('barra-flotante').classList.remove('visible');
+  document.getElementById('panel-multi').style.display     = 'none';
+  document.getElementById('multi-distancia-total').style.display = 'none';
+  document.getElementById('multi-destinos-list').innerHTML = '';
+
+  // Desactivar modo
+  ESTADO.modoMulti = false;
+  document.body.classList.remove('modo-multi');
+  const btn = document.getElementById('btn-multi');
+  if (btn) {
+    btn.classList.remove('activo');
+    btn.innerHTML = '<i class="bi bi-collection me-1"></i>Multi-ruta';
+  }
 }
